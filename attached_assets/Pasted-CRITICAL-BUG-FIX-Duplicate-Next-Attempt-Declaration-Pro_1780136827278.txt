@@ -1,0 +1,88 @@
+CRITICAL BUG FIX: Duplicate Next Attempt Declaration
+
+Problem:
+
+When a lifter completes an attempt and I enter the next attempt weight, the system automatically asks for the next attempt again after a few seconds.
+
+Symptoms:
+- Next attempt dialog appears twice.
+- Next attempt weight gets processed twice.
+- Auto-advance runs multiple times.
+- Duplicate Firebase writes occur.
+- Competition state becomes inconsistent.
+
+Find and fix the root cause.
+
+Audit all code related to:
+
+- Next attempt declaration
+- Auto advance
+- Referee verdict processing
+- Firebase listeners
+- useEffect hooks
+- Group progression
+- Current lifter updates
+- Attempt progression
+
+Requirements:
+
+1. Ensure next-attempt processing runs exactly once.
+
+2. Prevent duplicate execution caused by:
+   - multiple useEffect triggers
+   - multiple Firebase onValue listeners
+   - React re-renders
+   - duplicate state updates
+
+3. Add a unique attempt transaction ID.
+
+4. If the same attempt has already been processed:
+   - ignore duplicate events
+   - do not create another next-attempt request
+
+5. Add protection:
+   - processingRef
+   - processedAttemptIds
+   - debounce
+   - transaction lock
+
+6. Add detailed logs:
+
+   NEXT_ATTEMPT_REQUESTED
+   NEXT_ATTEMPT_CREATED
+   NEXT_ATTEMPT_SAVED
+   NEXT_ATTEMPT_PROCESSED
+
+   Include:
+   - lifterId
+   - attempt number
+   - weight
+   - timestamp
+
+7. Verify referee verdicts only trigger progression once.
+
+8. Verify Firebase listeners are unsubscribed correctly.
+
+9. Search entire codebase for:
+   applyRefereeDecision
+   advanceLifter
+   nextAttempt
+   autoAdvance
+   persistSessionSnapshot
+   useEffect
+
+10. Fix any location where the same event can fire twice.
+
+11. After fix:
+   Entering a next attempt should create only one declaration.
+   No duplicate popups.
+   No duplicate Firebase writes.
+   No repeated next-attempt requests.
+
+12. Test:
+   Bench A1 → A2
+   Bench A2 → A3
+   Squat A1 → A2
+   Deadlift A1 → A2
+
+Generate the code changes and explain exactly which files were modified.
