@@ -7647,10 +7647,10 @@ const DisplayFullPage = () => {
             const raw = PLATE_COLORS[String(plate)] || "#94a3b8";
             const displayCol = raw === "#111827" ? "#9ca3af" : raw;
             return (
-              <React.Fragment key={i}>
-                {i > 0 && <span className="text-white text-[clamp(1rem,2.5vw,1.75rem)] font-bold">+</span>}
+              <span key={i} className="inline-flex items-center gap-2">
+                {i > 0 && <span className="text-white font-bold" style={{ fontSize: "clamp(1rem,2.5vw,1.75rem)" }}>+</span>}
                 <span className="font-black tabular-nums" style={{ color: displayCol, fontSize: "clamp(1rem,2.5vw,1.75rem)" }}>{plate}</span>
-              </React.Fragment>
+              </span>
             );
           })}
         </div>
