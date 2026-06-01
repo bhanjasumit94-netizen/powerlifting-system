@@ -7595,62 +7595,243 @@ const DisplayFullPage = () => {
   ) : null;
 
   if (displayMode === "ipf_plate") {
-    return (
-      <div className={displayRootClass} style={displayRootStyle}>
-        {!competitionStarted && !forceLive && (
+    const curPlates = buildPlateBreakdown(loadingWeight, includeCollars);
+    const nxtPlates = nextLoadingWeight !== null ? buildPlateBreakdown(nextLoadingWeight, includeCollars) : [];
+    const curPerSideTotal = curPlates.reduce((s, p) => s + p, 0);
+    const nxtPerSideTotal = nxtPlates.reduce((s, p) => s + p, 0);
+
+    const renderIPFBarbell = (plates: number[], ic: boolean) => {
+      const left = [...plates].reverse();
+      const right = plates;
+      const renderPl = (plate: number, idx: number, side: "l" | "r") => {
+        const col = PLATE_COLORS[String(plate)] || "#64748b";
+        const h = PLATE_HEIGHT[String(plate)] ?? 80;
+        const w = PLATE_WIDTH[String(plate)] ?? 16;
+        const dark = plate === 15 || plate === 5;
+        return (
           <div
-            className={`mb-3 inline-block rounded border px-3 py-1 text-xs font-semibold ${
-              isDarkTheme
-                ? "border-amber-500/50 bg-amber-400/15 text-amber-200"
-                : "border-amber-600 bg-amber-100 text-amber-900"
-            }`}
+            key={`${side}-${idx}`}
+            className="relative flex items-start justify-center rounded-sm"
+            style={{ width: `${w + 6}px`, height: `${h}px`, backgroundColor: col, border: "1.5px solid rgba(0,0,0,0.55)", boxShadow: "inset 0 0 10px rgba(255,255,255,0.22)" }}
           >
-            Competition not started. Preview mode is active.
+            <span className={`pt-0.5 text-[10px] font-black leading-none ${dark ? "text-black" : "text-white"}`}>{plate}</span>
+          </div>
+        );
+      };
+      const collar = (k: string) => (
+        <div key={k} className="flex h-[70px] w-[13px] items-center justify-center rounded-sm bg-slate-500" style={{ border: "1px solid rgba(0,0,0,0.4)", boxShadow: "inset 0 0 8px rgba(255,255,255,0.3)" }} />
+      );
+      return (
+        <div className="flex items-center justify-center w-full">
+          <div className="flex items-end gap-[2px]">
+            {ic && collar("cl")}
+            {left.map((p, i) => renderPl(p, i, "l"))}
+          </div>
+          <div className="relative h-[18px] w-[140px] shrink-0 rounded-full bg-gradient-to-r from-slate-700 via-slate-400 to-slate-700" style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.7)" }}>
+            <div className="absolute right-0 top-1/2 h-7 w-3 -translate-y-1/2 rounded bg-slate-400" />
+            <div className="absolute left-0 top-1/2 h-7 w-3 -translate-y-1/2 rounded bg-slate-400" />
+          </div>
+          <div className="flex items-end gap-[2px]">
+            {right.map((p, i) => renderPl(p, i, "r"))}
+            {ic && collar("cr")}
+          </div>
+        </div>
+      );
+    };
+
+    const renderPlateText = (plates: number[]) => {
+      if (plates.length === 0) return <span className="text-slate-500 text-xl font-semibold">bar only</span>;
+      return (
+        <div className="flex items-center justify-center gap-2 flex-wrap">
+          {plates.map((plate, i) => {
+            const raw = PLATE_COLORS[String(plate)] || "#94a3b8";
+            const displayCol = raw === "#111827" ? "#9ca3af" : raw;
+            return (
+              <React.Fragment key={i}>
+                {i > 0 && <span className="text-white text-[clamp(1rem,2.5vw,1.75rem)] font-bold">+</span>}
+                <span className="font-black tabular-nums" style={{ color: displayCol, fontSize: "clamp(1rem,2.5vw,1.75rem)" }}>{plate}</span>
+              </React.Fragment>
+            );
+          })}
+        </div>
+      );
+    };
+
+    const upcomingRow = flightLineOrdered.slice(0, 10);
+
+    return (
+      <div
+        className="w-full overflow-hidden flex flex-col text-white"
+        style={{ ...displayRootStyle, height: "100vh", background: "#0a0a0a" }}
+      >
+        {!competitionStarted && !forceLive && (
+          <div className="shrink-0 bg-amber-500/20 border-b border-amber-400/30 px-4 py-1 text-center">
+            <span className="text-xs font-semibold uppercase tracking-widest text-amber-300">Preview mode — competition not started</span>
           </div>
         )}
-        <div className="mx-auto w-full max-w-7xl">
-          <p className="mb-2 text-center text-sm font-semibold uppercase tracking-[0.24em] text-cyan-300 md:text-base">
-            Design by SUMIT BHANJA
-          </p>
-          <div className="mb-4 text-center">
-            <p className="text-lg font-semibold uppercase tracking-[0.2em] text-cyan-200 md:text-2xl">
-              {currentLift.toUpperCase()} ATTEMPT {currentAttemptIndex + 1}
-            </p>
-            <p className="mt-2 text-[clamp(2rem,6vw,4.6rem)] font-black uppercase leading-tight">{currentLifter?.name || "NO LIFTER"}</p>
-            <p className="mt-2 text-[clamp(2.6rem,8vw,5.5rem)] font-bold leading-tight">{loadingWeight.toFixed(1)} kg</p>
-          </div>
 
-          <div className="mt-2 flex flex-col divide-y divide-cyan-400/25">
-            <div className="min-w-0 pb-10">
-              <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">Current</p>
-              <p className="mt-0.5 whitespace-normal break-words text-center text-sm font-black uppercase text-white">
-                {currentLifter?.name || "—"}
-              </p>
-              <div className="mt-4 flex justify-center">
-                <PlateStack weight={loadingWeight} includeCollars={includeCollars} />
-              </div>
+        {/* ── HEADER ── */}
+        <div className="shrink-0 flex items-center justify-between gap-2 px-4 py-2 border-b border-slate-700/70" style={{ background: "#111111" }}>
+          <div className="shrink-0 w-[190px]">
+            <p className="text-[clamp(0.7rem,1.4vw,1rem)] font-black uppercase leading-tight text-white tracking-wide">POWERLIFTING<br />COMPETITION</p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.25em] text-cyan-400 mt-0.5">DESIGN BY SUMIT BHANJA</p>
+          </div>
+          <div className="flex-1 text-center min-w-0">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.35em] text-cyan-400">CURRENT LIFTER</p>
+            <p className="font-black uppercase leading-none truncate" style={{ fontSize: "clamp(1.6rem,5vw,3.2rem)" }}>{currentLifter?.name || "NO LIFTER"}</p>
+          </div>
+          <div className="shrink-0 flex items-stretch gap-2 w-[380px] justify-end">
+            <div className="flex flex-col items-center justify-center px-3 py-1 border border-slate-600 rounded">
+              <p className="text-[8px] font-semibold uppercase tracking-[0.25em] text-slate-400">GROUP</p>
+              <p className="text-sm font-black text-white">{activeCompetitionGroupName || "—"}</p>
             </div>
-            <div className="min-w-0 pt-10">
-              <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">Next</p>
-              {nextLifter && nextLoadingWeight !== null ? (
-                <>
-                  <p className="mt-0.5 whitespace-normal break-words text-center text-sm font-black uppercase text-cyan-100">
-                    {nextLifter.name || "—"}
-                  </p>
-                  <div className="mt-4 flex justify-center">
-                    <PlateStack weight={nextLoadingWeight} includeCollars={includeCollars} />
-                  </div>
-                </>
-              ) : (
-                <div className="mt-4 flex min-h-[200px] flex-col items-center justify-center rounded-2xl border border-white/10 bg-black/25 px-3 py-6 text-center md:min-h-[240px]">
-                  <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">No next lifter</p>
-                </div>
-              )}
+            <div className="flex flex-col items-center justify-center px-3 py-1 rounded border border-cyan-500/60" style={{ background: "rgba(6,182,212,0.08)" }}>
+              <p className="text-[8px] font-semibold uppercase tracking-[0.2em] text-cyan-400 flex items-center gap-1">⏱ PLATFORM TIMER</p>
+              <p className="text-base font-black tabular-nums text-cyan-300 leading-none">
+                {timerPhase === "ATTEMPT" && timerEndsAt
+                  ? `${String(Math.floor(displayTimerSeconds / 60)).padStart(2, "0")}:${String(displayTimerSeconds % 60).padStart(2, "0")}`
+                  : "00:00"}
+              </p>
+            </div>
+            <div className="flex flex-col items-center justify-center px-3 py-1 border border-cyan-400/80 rounded">
+              <p className="text-[8px] font-semibold uppercase tracking-[0.25em] text-slate-400">MODE</p>
+              <p className="text-sm font-black text-cyan-300">{competitionMode === "BENCH_ONLY" ? "BENCH ONLY" : "FULL MEET"}</p>
             </div>
           </div>
         </div>
 
-        {platformTimerChip}
+        {/* ── INFO ROW ── */}
+        <div className="shrink-0 flex items-center justify-between gap-2 px-4 py-2 border-b border-slate-700/60" style={{ background: "#0f0f0f" }}>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-8 h-8 rounded flex items-center justify-center text-lg bg-slate-700 shrink-0">🏋️</div>
+            <div>
+              <p className="text-[8px] font-semibold uppercase tracking-[0.25em] text-slate-400">LIFT</p>
+              <p className="font-black uppercase text-white leading-none" style={{ fontSize: "clamp(0.75rem,1.8vw,1.1rem)" }}>{currentLift.toUpperCase()}</p>
+            </div>
+          </div>
+          <div className="text-center shrink-0">
+            <p className="text-[8px] font-semibold uppercase tracking-[0.25em] text-slate-400">ATTEMPT</p>
+            <p className="font-black text-white tabular-nums" style={{ fontSize: "clamp(1.1rem,2.5vw,1.8rem)" }}>{currentAttemptIndex + 1}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-[8px] font-semibold uppercase tracking-[0.25em] text-slate-400">WEIGHT</p>
+            <p className="font-black tabular-nums text-white leading-none" style={{ fontSize: "clamp(1.4rem,3.5vw,2.4rem)" }}>
+              {loadingWeight.toFixed(1)} <span style={{ fontSize: "clamp(0.9rem,2vw,1.4rem)" }}>KG</span>
+            </p>
+          </div>
+          <div className="text-center shrink-0">
+            <p className="text-[8px] font-semibold uppercase tracking-[0.25em] text-slate-400">BODYWEIGHT</p>
+            <p className="font-black tabular-nums text-white" style={{ fontSize: "clamp(0.85rem,2vw,1.3rem)" }}>
+              {typeof currentLifter?.bodyweight === "number" ? `${currentLifter.bodyweight.toFixed(1)} KG` : "—"}
+            </p>
+          </div>
+          <div className="text-center shrink-0">
+            <p className="text-[8px] font-semibold uppercase tracking-[0.25em] text-slate-400">LOT NUMBER</p>
+            <p className="font-black text-white" style={{ fontSize: "clamp(0.85rem,2vw,1.3rem)" }}>{currentLifter?.lot || "—"}</p>
+          </div>
+        </div>
+
+        {/* ── MAIN PANEL (Current + Next Bar Loading) ── */}
+        <div className="flex flex-1 gap-3 px-3 py-3 min-h-0">
+          {/* Current */}
+          <div className="flex-1 flex flex-col rounded-lg overflow-hidden min-w-0" style={{ border: "2px solid rgba(34,197,94,0.6)", background: "#0d0d0d" }}>
+            <div className="shrink-0 px-3 py-2 text-center border-b" style={{ borderColor: "rgba(34,197,94,0.35)", background: "rgba(34,197,94,0.1)" }}>
+              <p className="text-[clamp(0.6rem,1.3vw,0.85rem)] font-black uppercase tracking-[0.22em] text-green-400">CURRENT BAR LOADING</p>
+            </div>
+            <div className="flex-1 flex flex-col items-center justify-between px-3 py-2 min-h-0">
+              <div className="text-center shrink-0">
+                <p className="font-black tabular-nums text-green-400 leading-none" style={{ fontSize: "clamp(1.6rem,4.5vw,3rem)" }}>{loadingWeight.toFixed(1)} KG</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">({includeCollars ? "With Collar" : "Without Collar"})</p>
+              </div>
+              <div className="flex-1 flex items-center justify-center w-full py-1 min-h-0 overflow-hidden">
+                {renderIPFBarbell(curPlates, includeCollars)}
+              </div>
+              <div className="text-center w-full shrink-0">
+                {renderPlateText(curPlates)}
+                <p className="text-[8px] font-semibold uppercase tracking-[0.3em] text-slate-400 mt-1">TOTAL PER SIDE</p>
+                <p className="font-black tabular-nums text-green-400 leading-none" style={{ fontSize: "clamp(1rem,2.8vw,1.8rem)" }}>{curPerSideTotal.toFixed(1)} KG</p>
+              </div>
+            </div>
+            <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-t border-slate-700/60">
+              <span className="text-[9px] font-semibold uppercase tracking-widest text-slate-400">COLLAR</span>
+              <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${includeCollars ? "bg-cyan-500 text-black" : "bg-slate-600 text-slate-300"}`}>
+                {includeCollars ? "ON" : "OFF"}
+              </span>
+              {includeCollars && <span className="text-[9px] text-slate-400">| COLLAR WEIGHT: 2.5 KG PER SIDE</span>}
+            </div>
+          </div>
+
+          {/* Next */}
+          <div className="flex-1 flex flex-col rounded-lg overflow-hidden min-w-0" style={{ border: "2px solid rgba(6,182,212,0.6)", background: "#0d0d0d" }}>
+            <div className="shrink-0 px-3 py-2 text-center border-b" style={{ borderColor: "rgba(6,182,212,0.35)", background: "rgba(6,182,212,0.08)" }}>
+              <p className="text-[clamp(0.6rem,1.3vw,0.85rem)] font-black uppercase tracking-[0.22em] text-cyan-400">NEXT BAR LOADING</p>
+            </div>
+            {nextLifter && nextLoadingWeight !== null ? (
+              <>
+                <div className="flex-1 flex flex-col items-center justify-between px-3 py-2 min-h-0">
+                  <div className="text-center shrink-0">
+                    <p className="font-black tabular-nums text-cyan-400 leading-none" style={{ fontSize: "clamp(1.6rem,4.5vw,3rem)" }}>{nextLoadingWeight.toFixed(1)} KG</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">({includeCollars ? "With Collar" : "Without Collar"})</p>
+                  </div>
+                  <div className="flex-1 flex items-center justify-center w-full py-1 min-h-0 overflow-hidden">
+                    {renderIPFBarbell(nxtPlates, includeCollars)}
+                  </div>
+                  <div className="text-center w-full shrink-0">
+                    {renderPlateText(nxtPlates)}
+                    <p className="text-[8px] font-semibold uppercase tracking-[0.3em] text-slate-400 mt-1">TOTAL PER SIDE</p>
+                    <p className="font-black tabular-nums text-cyan-400 leading-none" style={{ fontSize: "clamp(1rem,2.8vw,1.8rem)" }}>{nxtPerSideTotal.toFixed(1)} KG</p>
+                  </div>
+                </div>
+                <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-t border-slate-700/60">
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-slate-400">COLLAR</span>
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${includeCollars ? "bg-cyan-500 text-black" : "bg-slate-600 text-slate-300"}`}>
+                    {includeCollars ? "ON" : "OFF"}
+                  </span>
+                  {includeCollars && <span className="text-[9px] text-slate-400">| COLLAR WEIGHT: 2.5 KG PER SIDE</span>}
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center">
+                <p className="text-slate-500 text-sm font-semibold uppercase tracking-wide">No next lifter</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── UPCOMING LIFTERS ── */}
+        <div className="shrink-0 flex border-t border-slate-700" style={{ height: "86px", background: "#0d0d0d" }}>
+          <div className="flex items-center justify-center px-2 border-r border-slate-700 shrink-0 w-[52px]">
+            <p className="text-[8px] font-black uppercase text-cyan-400 tracking-[0.25em] text-center leading-snug" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+              UPCOMING{"\n"}LIFTERS
+            </p>
+          </div>
+          <div className="flex-1 flex overflow-x-auto overflow-y-hidden">
+            {upcomingRow.map((lifter, idx) => {
+              const w = getAttemptValue(lifter, currentLift, currentAttemptIndex);
+              const isCur = lifter.id === flightOrderHighlightId;
+              return (
+                <div
+                  key={lifter.id}
+                  data-display-order-lifter={lifter.id}
+                  className={`flex flex-col items-center justify-center px-2 shrink-0 border-r border-slate-700/50 text-center transition-colors ${
+                    isCur ? "bg-green-500/12" : ""
+                  }`}
+                  style={{
+                    minWidth: "80px",
+                    borderLeft: isCur ? "2px solid #22c55e" : undefined,
+                  }}
+                >
+                  <p className={`text-base font-black tabular-nums leading-none ${isCur ? "text-green-400" : "text-slate-400"}`}>{idx + 1}</p>
+                  <p className={`text-[10px] font-bold uppercase leading-tight truncate w-full mt-0.5 ${isCur ? "text-white" : "text-slate-300"}`}>{lifter.name}</p>
+                  <p className={`text-[10px] font-bold tabular-nums ${isCur ? "text-green-300" : "text-slate-400"}`}>
+                    {w !== null ? `${w.toFixed(1)} KG` : "—"}
+                  </p>
+                  <p className="text-[8px] text-slate-500 font-semibold">{lifter.lot || "—"}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     );
   }
