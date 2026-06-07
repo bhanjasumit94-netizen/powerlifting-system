@@ -6597,11 +6597,19 @@ const PlateStack = ({ weight, includeCollars }: { weight: number; includeCollars
 };
 
 const ResultsPage = () => {
-  const { lifters, setLifters, competitionMode, groups } = useAppContext();
+  const { lifters, setLifters, competitionMode, groups, activeCompetitionGroupName } = useAppContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [notice, setNotice] = useState("");
   const [attemptDrafts, setAttemptDrafts] = useState<Record<string, string>>({});
   const isBenchOnly = competitionMode === "BENCH_ONLY";
+
+  const groupScopedLifters = useMemo(
+    () =>
+      activeCompetitionGroupName !== null
+        ? lifters.filter((l) => isInGroup(l.group, activeCompetitionGroupName))
+        : lifters,
+    [lifters, activeCompetitionGroupName],
+  );
 
   const updateAttemptCell = (
     lifterId: string,
@@ -6667,18 +6675,18 @@ const ResultsPage = () => {
   };
 
   const filteredLifters = useMemo(() => {
-    const eligible = lifters.filter((lifter) => !lifter.disqualified);
+    const eligible = groupScopedLifters.filter((lifter) => !lifter.disqualified);
     const query = searchTerm.trim().toLowerCase();
     if (!query) return eligible;
     return eligible.filter((lifter) => {
       const haystack = `${lifter.name} ${lifter.team} ${lifter.group} ${lifter.weightClass}`.toLowerCase();
       return haystack.includes(query);
     });
-  }, [lifters, searchTerm]);
+  }, [groupScopedLifters, searchTerm]);
 
   const ranking = useMemo(
     () =>
-      [...lifters]
+      [...groupScopedLifters]
         .filter((l) => !l.disqualified)
         .map((l) => {
           const squat = bestLift(l.squatAttempts);
@@ -6689,7 +6697,7 @@ const ResultsPage = () => {
           return { ...l, squat, bench, deadlift, total, glPoints };
         })
         .sort((a, b) => b.glPoints - a.glPoints),
-    [lifters, competitionMode, isBenchOnly],
+    [groupScopedLifters, competitionMode, isBenchOnly],
   );
 
   return (
@@ -7445,7 +7453,7 @@ const DisplayFullPage = () => {
     [lifters, activeCompetitionGroupName],
   );
 
-  const rankingSourceLifters = displayMode === "results_all" ? lifters : competitionScopedLifters;
+  const rankingSourceLifters = competitionScopedLifters;
 
   const ranking = useMemo(
     () =>
