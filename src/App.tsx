@@ -7789,87 +7789,122 @@ const DisplayFullPage = () => {
 
           {/* ── PLATE CHANGE INSTRUCTIONS ── */}
           {(() => {
+            const GREEN = "#39ff14";
+            const RED = "#ff3b30";
+
             if (!nextLifter || nextLoadingWeight === null) {
               return (
-                <div className="w-[180px] shrink-0 flex flex-col rounded-lg overflow-hidden" style={{ border: "2px solid rgba(100,116,139,0.4)", background: "#0d0d0d" }}>
-                  <div className="shrink-0 px-2 py-2 text-center border-b border-slate-700/60" style={{ background: "rgba(100,116,139,0.08)" }}>
-                    <p className="text-[clamp(0.55rem,1.1vw,0.75rem)] font-black uppercase tracking-[0.18em] text-slate-400">PLATE CHANGE</p>
+                <div
+                  className="w-[220px] shrink-0 flex flex-col rounded-2xl overflow-hidden"
+                  style={{ border: `2px solid #334155`, background: "#0a0a0a" }}
+                >
+                  <div className="px-3 pt-4 pb-2 text-center">
+                    <p className="font-black uppercase leading-tight" style={{ fontSize: "clamp(0.85rem,1.6vw,1.1rem)", color: "#334155" }}>PLATE CHANGE</p>
+                    <p className="font-black uppercase text-slate-600" style={{ fontSize: "clamp(0.75rem,1.3vw,0.9rem)" }}>INSTRUCTIONS</p>
                   </div>
-                  <div className="flex-1 flex items-center justify-center px-2">
-                    <p className="text-slate-600 text-[10px] font-semibold uppercase text-center">No next lifter</p>
+                  <div className="flex-1 flex items-center justify-center px-4 py-6">
+                    <p className="text-slate-600 text-sm font-black uppercase text-center tracking-widest">NO NEXT<br />LIFTER</p>
+                  </div>
+                  <div className="border-t border-slate-800 px-3 py-2 flex items-center gap-2">
+                    <span className="text-slate-600 text-sm">ℹ</span>
+                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-600">MAKE SURE COLLARS ARE TIGHT</p>
                   </div>
                 </div>
               );
             }
+
             const { toRemove, toAdd } = computePlateChanges(curPlates, nxtPlates);
-            const weightDiff = nextLoadingWeight - loadingWeight;
             const noChange = toRemove.length === 0 && toAdd.length === 0;
+
+            const renderStep = (plates: number[], isAdd: boolean) => {
+              const color = isAdd ? GREEN : RED;
+              const symbol = isAdd ? "+" : "−";
+              return plates.map((plate, i) => (
+                <div key={`${isAdd ? "add" : "rem"}-${i}`} className="flex flex-col items-center w-full">
+                  {/* Circle icon + weight */}
+                  <div className="flex items-center justify-center gap-2 mt-3">
+                    <div
+                      className="flex items-center justify-center rounded-full shrink-0"
+                      style={{
+                        width: "clamp(36px,5vw,52px)",
+                        height: "clamp(36px,5vw,52px)",
+                        border: `3px solid ${color}`,
+                        color,
+                        fontSize: "clamp(1.1rem,2.2vw,1.6rem)",
+                        fontWeight: 900,
+                        lineHeight: 1,
+                      }}
+                    >
+                      {symbol}
+                    </div>
+                    <p
+                      className="font-black tabular-nums leading-none"
+                      style={{ color, fontSize: "clamp(1.4rem,3.5vw,2.4rem)" }}
+                    >
+                      {symbol}{plate} <span style={{ fontSize: "clamp(0.7rem,1.5vw,1rem)", color: "#ffffff" }}>KG</span>
+                    </p>
+                  </div>
+                  {/* Instruction text */}
+                  <div className="mt-2 text-center">
+                    <p className="font-black uppercase leading-tight" style={{ fontSize: "clamp(0.7rem,1.4vw,0.95rem)", color }}>
+                      {isAdd ? "ADD" : "REMOVE"} {plate} KG PLATES
+                    </p>
+                    <p className="font-black uppercase text-white leading-tight" style={{ fontSize: "clamp(0.7rem,1.4vw,0.95rem)" }}>
+                      TO BOTH SIDES
+                    </p>
+                  </div>
+                  {i < plates.length - 1 && <div className="w-full mt-3 border-t" style={{ borderColor: "rgba(255,255,255,0.08)" }} />}
+                </div>
+              ));
+            };
+
             return (
-              <div className="w-[200px] shrink-0 flex flex-col rounded-lg overflow-hidden" style={{ border: "2px solid rgba(251,191,36,0.55)", background: "#0d0d0d" }}>
-                <div className="shrink-0 px-2 py-2 text-center border-b border-amber-500/30" style={{ background: "rgba(251,191,36,0.08)" }}>
-                  <p className="text-[clamp(0.55rem,1.1vw,0.75rem)] font-black uppercase tracking-[0.18em] text-amber-400">PLATE CHANGE</p>
-                  <p className="text-[9px] font-semibold text-slate-400 mt-0.5">
-                    {weightDiff > 0 ? `+${formatKg(weightDiff)} KG` : weightDiff < 0 ? `${formatKg(weightDiff)} KG` : "Same weight"}
+              <div
+                className="w-[220px] shrink-0 flex flex-col rounded-2xl overflow-hidden"
+                style={{ border: `2px solid ${noChange ? "#22c55e" : (toRemove.length > 0 && toAdd.length > 0 ? "#f59e0b" : toAdd.length > 0 ? GREEN : RED)}`, background: "#0a0a0a" }}
+              >
+                {/* Header */}
+                <div className="px-3 pt-4 pb-1 text-center">
+                  <p className="font-black uppercase leading-tight" style={{ fontSize: "clamp(0.85rem,1.6vw,1.15rem)", color: GREEN }}>
+                    PLATE CHANGE
+                  </p>
+                  <p className="font-black uppercase text-white leading-tight" style={{ fontSize: "clamp(0.8rem,1.4vw,1rem)" }}>
+                    INSTRUCTIONS
                   </p>
                 </div>
-                <div className="flex-1 flex flex-col items-center justify-center gap-2 px-3 py-3">
+
+                {/* Body */}
+                <div className="flex-1 flex flex-col items-center justify-center px-4 pb-3 min-h-0">
                   {noChange ? (
-                    <div className="text-center">
-                      <p className="text-[28px]">✅</p>
-                      <p className="text-xs font-black uppercase tracking-wide text-slate-300 mt-1">No Change</p>
-                      <p className="text-[9px] text-slate-500 mt-0.5">Same loading</p>
+                    <div className="flex flex-col items-center gap-2 py-4">
+                      <div
+                        className="flex items-center justify-center rounded-full"
+                        style={{ width: "52px", height: "52px", border: `3px solid ${GREEN}`, color: GREEN, fontSize: "1.8rem", fontWeight: 900 }}
+                      >
+                        ✓
+                      </div>
+                      <p className="font-black uppercase text-center mt-1" style={{ fontSize: "clamp(0.75rem,1.4vw,0.95rem)", color: GREEN }}>
+                        NO CHANGE
+                      </p>
+                      <p className="font-black uppercase text-white text-center" style={{ fontSize: "clamp(0.7rem,1.3vw,0.88rem)" }}>
+                        SAME LOADING
+                      </p>
                     </div>
                   ) : (
-                    <>
-                      {toRemove.length > 0 && (
-                        <div className="w-full rounded-md px-2 py-2" style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.35)" }}>
-                          <p className="text-[8px] font-black uppercase tracking-[0.25em] text-red-400 text-center mb-1.5">REMOVE EACH SIDE</p>
-                          <div className="flex flex-col gap-1">
-                            {toRemove.map((plate, i) => (
-                              <div key={i} className="flex items-center justify-between">
-                                <span className="text-[10px] font-black tabular-nums text-red-300">— {plate} KG</span>
-                                <div
-                                  className="rounded-sm flex items-center justify-center"
-                                  style={{
-                                    width: "22px", height: "14px",
-                                    backgroundColor: PLATE_COLORS[String(plate)] || "#64748b",
-                                    border: "1px solid rgba(0,0,0,0.4)",
-                                  }}
-                                >
-                                  <span className="text-[7px] font-black leading-none" style={{ color: plate === 15 || plate === 5 ? "#000" : "#fff" }}>{plate}</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                    <div className="flex flex-col items-center w-full">
+                      {toRemove.length > 0 && renderStep(toRemove, false)}
+                      {toRemove.length > 0 && toAdd.length > 0 && (
+                        <div className="w-full mt-3 border-t" style={{ borderColor: "rgba(255,255,255,0.12)" }} />
                       )}
-                      {toAdd.length > 0 && (
-                        <div className="w-full rounded-md px-2 py-2" style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.35)" }}>
-                          <p className="text-[8px] font-black uppercase tracking-[0.25em] text-green-400 text-center mb-1.5">ADD EACH SIDE</p>
-                          <div className="flex flex-col gap-1">
-                            {toAdd.map((plate, i) => (
-                              <div key={i} className="flex items-center justify-between">
-                                <span className="text-[10px] font-black tabular-nums text-green-300">+ {plate} KG</span>
-                                <div
-                                  className="rounded-sm flex items-center justify-center"
-                                  style={{
-                                    width: "22px", height: "14px",
-                                    backgroundColor: PLATE_COLORS[String(plate)] || "#64748b",
-                                    border: "1px solid rgba(0,0,0,0.4)",
-                                  }}
-                                >
-                                  <span className="text-[7px] font-black leading-none" style={{ color: plate === 15 || plate === 5 ? "#000" : "#fff" }}>{plate}</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </>
+                      {toAdd.length > 0 && renderStep(toAdd, true)}
+                    </div>
                   )}
                 </div>
-                <div className="shrink-0 px-2 py-1.5 border-t border-slate-700/60 text-center">
-                  <p className="text-[8px] text-slate-500 font-semibold uppercase tracking-wide">NEXT: {nextLifter.name}</p>
+
+                {/* Footer */}
+                <div className="border-t px-3 py-2 flex items-center gap-2" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
+                  <span style={{ color: GREEN, fontSize: "0.85rem", fontWeight: 900 }}>ℹ</span>
+                  <p className="text-[8px] font-black uppercase tracking-wider text-white">MAKE SURE COLLARS ARE TIGHT</p>
                 </div>
               </div>
             );
