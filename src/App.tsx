@@ -6478,6 +6478,31 @@ const buildPlateBreakdown = (weight: number, includeCollars: boolean) => {
   return loaded;
 };
 
+const formatKg = (v: number): string => {
+  const rounded = Math.round(v * 100) / 100;
+  return parseFloat(rounded.toFixed(2)).toString();
+};
+
+const computePlateChanges = (cur: number[], nxt: number[]): { toRemove: number[]; toAdd: number[] } => {
+  const curCount: Record<string, number> = {};
+  const nxtCount: Record<string, number> = {};
+  for (const p of cur) curCount[String(p)] = (curCount[String(p)] || 0) + 1;
+  for (const p of nxt) nxtCount[String(p)] = (nxtCount[String(p)] || 0) + 1;
+  const toRemove: number[] = [];
+  const toAdd: number[] = [];
+  const allPlates = new Set([...Object.keys(curCount), ...Object.keys(nxtCount)]);
+  for (const ps of allPlates) {
+    const p = Number(ps);
+    const c = curCount[ps] || 0;
+    const n = nxtCount[ps] || 0;
+    for (let i = 0; i < c - n; i++) toRemove.push(p);
+    for (let i = 0; i < n - c; i++) toAdd.push(p);
+  }
+  toRemove.sort((a, b) => b - a);
+  toAdd.sort((a, b) => b - a);
+  return { toRemove, toAdd };
+};
+
 const formatPerSideLoading = (plates: number[], includeCollars: boolean) => {
   const parts = plates.map((plate) => `${plate}`);
   if (includeCollars) parts.push("collar");
@@ -7731,12 +7756,13 @@ const DisplayFullPage = () => {
           </div>
         </div>
 
-        {/* ── MAIN PANEL (Current + Next Bar Loading) ── */}
+        {/* ── MAIN PANEL (Current + Plate Change + Next Bar Loading) ── */}
         <div className="flex flex-1 gap-3 px-3 py-3 min-h-0">
           {/* Current */}
           <div className="flex-1 flex flex-col rounded-lg overflow-hidden min-w-0" style={{ border: "2px solid rgba(34,197,94,0.6)", background: "#0d0d0d" }}>
             <div className="shrink-0 px-3 py-2 text-center border-b" style={{ borderColor: "rgba(34,197,94,0.35)", background: "rgba(34,197,94,0.1)" }}>
               <p className="text-[clamp(0.6rem,1.3vw,0.85rem)] font-black uppercase tracking-[0.22em] text-green-400">CURRENT BAR LOADING</p>
+              <p className="text-[9px] font-semibold text-slate-400 truncate mt-0.5">{currentLifter?.name || "—"}</p>
             </div>
             <div className="flex-1 flex flex-col items-center justify-between px-3 py-2 min-h-0">
               <div className="text-center shrink-0">
@@ -7749,7 +7775,7 @@ const DisplayFullPage = () => {
               <div className="text-center w-full shrink-0">
                 {renderPlateText(curPlates)}
                 <p className="text-[8px] font-semibold uppercase tracking-[0.3em] text-slate-400 mt-1">TOTAL PER SIDE</p>
-                <p className="font-black tabular-nums text-green-400 leading-none" style={{ fontSize: "clamp(1rem,2.8vw,1.8rem)" }}>{curPerSideTotal.toFixed(1)} KG</p>
+                <p className="font-black tabular-nums text-green-400 leading-none" style={{ fontSize: "clamp(1rem,2.8vw,1.8rem)" }}>{formatKg(curPerSideTotal)} KG</p>
               </div>
             </div>
             <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-t border-slate-700/60">
@@ -7761,10 +7787,99 @@ const DisplayFullPage = () => {
             </div>
           </div>
 
+          {/* ── PLATE CHANGE INSTRUCTIONS ── */}
+          {(() => {
+            if (!nextLifter || nextLoadingWeight === null) {
+              return (
+                <div className="w-[180px] shrink-0 flex flex-col rounded-lg overflow-hidden" style={{ border: "2px solid rgba(100,116,139,0.4)", background: "#0d0d0d" }}>
+                  <div className="shrink-0 px-2 py-2 text-center border-b border-slate-700/60" style={{ background: "rgba(100,116,139,0.08)" }}>
+                    <p className="text-[clamp(0.55rem,1.1vw,0.75rem)] font-black uppercase tracking-[0.18em] text-slate-400">PLATE CHANGE</p>
+                  </div>
+                  <div className="flex-1 flex items-center justify-center px-2">
+                    <p className="text-slate-600 text-[10px] font-semibold uppercase text-center">No next lifter</p>
+                  </div>
+                </div>
+              );
+            }
+            const { toRemove, toAdd } = computePlateChanges(curPlates, nxtPlates);
+            const weightDiff = nextLoadingWeight - loadingWeight;
+            const noChange = toRemove.length === 0 && toAdd.length === 0;
+            return (
+              <div className="w-[200px] shrink-0 flex flex-col rounded-lg overflow-hidden" style={{ border: "2px solid rgba(251,191,36,0.55)", background: "#0d0d0d" }}>
+                <div className="shrink-0 px-2 py-2 text-center border-b border-amber-500/30" style={{ background: "rgba(251,191,36,0.08)" }}>
+                  <p className="text-[clamp(0.55rem,1.1vw,0.75rem)] font-black uppercase tracking-[0.18em] text-amber-400">PLATE CHANGE</p>
+                  <p className="text-[9px] font-semibold text-slate-400 mt-0.5">
+                    {weightDiff > 0 ? `+${formatKg(weightDiff)} KG` : weightDiff < 0 ? `${formatKg(weightDiff)} KG` : "Same weight"}
+                  </p>
+                </div>
+                <div className="flex-1 flex flex-col items-center justify-center gap-2 px-3 py-3">
+                  {noChange ? (
+                    <div className="text-center">
+                      <p className="text-[28px]">✅</p>
+                      <p className="text-xs font-black uppercase tracking-wide text-slate-300 mt-1">No Change</p>
+                      <p className="text-[9px] text-slate-500 mt-0.5">Same loading</p>
+                    </div>
+                  ) : (
+                    <>
+                      {toRemove.length > 0 && (
+                        <div className="w-full rounded-md px-2 py-2" style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.35)" }}>
+                          <p className="text-[8px] font-black uppercase tracking-[0.25em] text-red-400 text-center mb-1.5">REMOVE EACH SIDE</p>
+                          <div className="flex flex-col gap-1">
+                            {toRemove.map((plate, i) => (
+                              <div key={i} className="flex items-center justify-between">
+                                <span className="text-[10px] font-black tabular-nums text-red-300">— {plate} KG</span>
+                                <div
+                                  className="rounded-sm flex items-center justify-center"
+                                  style={{
+                                    width: "22px", height: "14px",
+                                    backgroundColor: PLATE_COLORS[String(plate)] || "#64748b",
+                                    border: "1px solid rgba(0,0,0,0.4)",
+                                  }}
+                                >
+                                  <span className="text-[7px] font-black leading-none" style={{ color: plate === 15 || plate === 5 ? "#000" : "#fff" }}>{plate}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {toAdd.length > 0 && (
+                        <div className="w-full rounded-md px-2 py-2" style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.35)" }}>
+                          <p className="text-[8px] font-black uppercase tracking-[0.25em] text-green-400 text-center mb-1.5">ADD EACH SIDE</p>
+                          <div className="flex flex-col gap-1">
+                            {toAdd.map((plate, i) => (
+                              <div key={i} className="flex items-center justify-between">
+                                <span className="text-[10px] font-black tabular-nums text-green-300">+ {plate} KG</span>
+                                <div
+                                  className="rounded-sm flex items-center justify-center"
+                                  style={{
+                                    width: "22px", height: "14px",
+                                    backgroundColor: PLATE_COLORS[String(plate)] || "#64748b",
+                                    border: "1px solid rgba(0,0,0,0.4)",
+                                  }}
+                                >
+                                  <span className="text-[7px] font-black leading-none" style={{ color: plate === 15 || plate === 5 ? "#000" : "#fff" }}>{plate}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+                <div className="shrink-0 px-2 py-1.5 border-t border-slate-700/60 text-center">
+                  <p className="text-[8px] text-slate-500 font-semibold uppercase tracking-wide">NEXT: {nextLifter.name}</p>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Next */}
           <div className="flex-1 flex flex-col rounded-lg overflow-hidden min-w-0" style={{ border: "2px solid rgba(6,182,212,0.6)", background: "#0d0d0d" }}>
             <div className="shrink-0 px-3 py-2 text-center border-b" style={{ borderColor: "rgba(6,182,212,0.35)", background: "rgba(6,182,212,0.08)" }}>
               <p className="text-[clamp(0.6rem,1.3vw,0.85rem)] font-black uppercase tracking-[0.22em] text-cyan-400">NEXT BAR LOADING</p>
+              <p className="text-[9px] font-semibold text-slate-400 truncate mt-0.5">{nextLifter?.name || "—"}</p>
             </div>
             {nextLifter && nextLoadingWeight !== null ? (
               <>
@@ -7779,7 +7894,7 @@ const DisplayFullPage = () => {
                   <div className="text-center w-full shrink-0">
                     {renderPlateText(nxtPlates)}
                     <p className="text-[8px] font-semibold uppercase tracking-[0.3em] text-slate-400 mt-1">TOTAL PER SIDE</p>
-                    <p className="font-black tabular-nums text-cyan-400 leading-none" style={{ fontSize: "clamp(1rem,2.8vw,1.8rem)" }}>{nxtPerSideTotal.toFixed(1)} KG</p>
+                    <p className="font-black tabular-nums text-cyan-400 leading-none" style={{ fontSize: "clamp(1rem,2.8vw,1.8rem)" }}>{formatKg(nxtPerSideTotal)} KG</p>
                   </div>
                 </div>
                 <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-t border-slate-700/60">
