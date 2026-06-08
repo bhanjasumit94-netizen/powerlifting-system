@@ -6351,6 +6351,7 @@ const ScreenPage = () => {
           <option value="order_attempts" className="bg-slate-900">3. Lifter Order With Attempts</option>
           <option value="results_all" className="bg-slate-900">4. Results All</option>
           <option value="ipf_plate" className="bg-slate-900">5. IPF Plate Only</option>
+          <option value="next_attempt_queue" className="bg-slate-900">6. Next Attempt Queue</option>
         </select>
 
         <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-slate-500">Venue screen (projector / LED)</p>
@@ -7185,6 +7186,230 @@ const ResultsTable = memo(({
   );
 });
 
+const NextAttemptQueueDisplay = ({
+  forceLive,
+  displayRootStyle,
+}: {
+  forceLive: boolean;
+  displayRootStyle: React.CSSProperties;
+}) => {
+  const {
+    lifters,
+    currentLift,
+    currentAttemptIndex,
+    competitionMode,
+    competitionStarted,
+    activeCompetitionGroupName,
+    nextAttemptQueue,
+    updateAttemptForLifter,
+    resetSignals,
+  } = useAppContext();
+
+  const sessionLifters = useMemo(
+    () =>
+      activeCompetitionGroupName !== null
+        ? lifters.filter((l) => isInGroup(l.group, activeCompetitionGroupName))
+        : lifters,
+    [lifters, activeCompetitionGroupName],
+  );
+
+  const pendingQueueEntries = useMemo(() => {
+    const queueBase =
+      activeCompetitionGroupName !== null
+        ? nextAttemptQueue.filter((e) => sessionLifters.some((l) => l.id === e.lifterId))
+        : nextAttemptQueue;
+    return sortNextAttemptQueue(
+      [...queueBase, ...derivePendingNextAttemptQueue(sessionLifters, competitionMode)],
+      lifters,
+      competitionMode,
+    ).filter((entry) => isPendingQueueEntry(entry, lifters));
+  }, [nextAttemptQueue, lifters, sessionLifters, competitionMode, activeCompetitionGroupName]);
+
+  const queuedAttemptRows = useMemo(
+    () =>
+      pendingQueueEntries
+        .map((entry) => ({ entry, lifter: lifters.find((item) => item.id === entry.lifterId) ?? null }))
+        .filter((row): row is { entry: NextAttemptEntry; lifter: Lifter } => Boolean(row.lifter)),
+    [pendingQueueEntries, lifters],
+  );
+
+  const [now, setNow] = useState(Date.now);
+  const [queueTimerStarts, setQueueTimerStarts] = useState<Record<string, number>>({});
+  const [quickWeightDraft, setQuickWeightDraft] = useState<Record<string, string>>({});
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    setQueueTimerStarts((prev) => {
+      const next: Record<string, number> = {};
+      queuedAttemptRows.forEach(({ entry }) => {
+        const key = `${entry.lifterId}-${entry.lift}-${entry.attemptIndex}`;
+        next[key] = prev[key] ?? Date.now();
+      });
+      return next;
+    });
+  }, [queuedAttemptRows]);
+
+  useEffect(() => {
+    if (!queuedAttemptRows.length) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 250);
+    return () => window.clearInterval(timer);
+  }, [queuedAttemptRows.length]);
+
+  const buildQuickWeights = (baseWeight: number, floorWeight: number) => {
+    const start = Math.max(20, floorWeight, Math.round((baseWeight - 10) / 2.5) * 2.5);
+    return Array.from({ length: 10 }, (_, i) => Number((start + i * 2.5).toFixed(1)));
+  };
+
+  const formatTimer = (seconds: number) => {
+    const abs = Math.abs(seconds);
+    const mm = Math.floor(abs / 60);
+    const ss = String(abs % 60).padStart(2, "0");
+    return seconds < 0 ? `-${mm}:${ss}` : `${mm}:${ss}`;
+  };
+
+  return (
+    <div
+      className="w-full min-h-screen overflow-y-auto text-white"
+      style={{ ...displayRootStyle, background: "#0d0d0d" }}
+    >
+      {!competitionStarted && !forceLive && (
+        <div className="bg-amber-500/20 border-b border-amber-400/30 px-4 py-1 text-center">
+          <span className="text-xs font-semibold uppercase tracking-widest text-amber-300">
+            Preview mode — competition not started
+          </span>
+        </div>
+      )}
+
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        {/* Header */}
+        <p className="text-center text-sm font-semibold uppercase tracking-[0.24em] text-violet-300">
+          NEXT ATTEMPT QUEUE ({queuedAttemptRows.length})
+        </p>
+        <hr className="border-white/15" />
+
+        {/* Queue rows */}
+        {queuedAttemptRows.map(({ entry, lifter }, queueIndex) => {
+          const queueLift = entry.lift;
+          const queueAttemptIndex = entry.attemptIndex;
+          const attempt = getAttempts(lifter, queueLift)[queueAttemptIndex];
+          const previousAttempt =
+            queueAttemptIndex > 0 ? getAttempts(lifter, queueLift)[queueAttemptIndex - 1] : null;
+          const minQuickWeight =
+            typeof previousAttempt?.weight === "number" ? previousAttempt.weight : 20;
+          const baseWeight =
+            typeof attempt?.weight === "number"
+              ? attempt.weight
+              : resolveAttemptWeight(lifter, queueLift, queueAttemptIndex);
+          const quickWeights = buildQuickWeights(baseWeight, minQuickWeight);
+          const draftKey = `${lifter.id}-${queueLift}-${queueAttemptIndex}`;
+          const draft = quickWeightDraft[draftKey] ?? "";
+          const queueKey = `${entry.lifterId}-${entry.lift}-${entry.attemptIndex}`;
+          const startedAt = queueTimerStarts[queueKey] ?? now;
+          const perLifterSignedSeconds = Math.ceil((startedAt + ONE_MINUTE_MS - now) / 1000);
+
+          const applyWeight = (nextWeight: number) => {
+            const result = updateAttemptForLifter(lifter.id, queueLift, queueAttemptIndex, nextWeight);
+            if (result.ok) {
+              setQuickWeightDraft((prev) => ({ ...prev, [draftKey]: String(nextWeight) }));
+            }
+            setActionNotice(result.message);
+          };
+
+          return (
+            <div
+              key={`${lifter.id}-${queueLift}-${queueAttemptIndex}`}
+              className="border-t border-white/10 pt-4 text-center first:border-t-0 first:pt-0"
+            >
+              <div className="flex items-center justify-center gap-3">
+                <h3 className="font-serif text-4xl font-bold uppercase">
+                  {lifter.lot ? `- ` : ""}{lifter.name}
+                </h3>
+                <span className="rounded-lg border border-violet-300/40 bg-violet-500/15 px-3 py-1 text-base font-semibold text-violet-100 md:text-lg">
+                  {formatTimer(perLifterSignedSeconds)}
+                </span>
+              </div>
+              <p className="mt-1 text-sm uppercase tracking-[0.2em] text-violet-200">
+                {queueLift} attempt {queueAttemptIndex + 1}
+              </p>
+              {queueIndex === 0 ? (
+                <p className="mt-1 text-xs uppercase tracking-[0.15em] text-cyan-200">Current next attempt</p>
+              ) : (
+                <p className="mt-1 text-xs uppercase tracking-[0.15em] text-slate-400">Waiting in next-attempt list</p>
+              )}
+
+              {/* Quick weight grid */}
+              <div className="mx-auto mt-3 grid max-w-lg grid-cols-3 gap-2 sm:grid-cols-5">
+                {quickWeights.map((w) => (
+                  <button
+                    key={`${lifter.id}-${w}`}
+                    onClick={() => applyWeight(w)}
+                    className="rounded border border-white/20 bg-white/10 py-2 text-2xl hover:bg-white/20 active:bg-white/30 touch-manipulation select-none"
+                  >
+                    {w}
+                  </button>
+                ))}
+              </div>
+
+              {/* Manual input + + button + Pass */}
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={draft}
+                  onChange={(e) =>
+                    setQuickWeightDraft((prev) => ({ ...prev, [draftKey]: e.target.value }))
+                  }
+                  placeholder=""
+                  className="h-12 w-28 rounded border border-white/20 bg-white/10 px-2 text-center text-2xl text-white"
+                />
+                <button
+                  onClick={() => {
+                    const cur = Number(draft || 0);
+                    const next = Number.isFinite(cur) && cur > 0 ? cur + 2.5 : baseWeight + 2.5;
+                    applyWeight(Number(next.toFixed(1)));
+                  }}
+                  className="h-12 w-14 rounded border border-white/20 bg-white/10 text-4xl leading-none hover:bg-white/20 touch-manipulation select-none"
+                >
+                  +
+                </button>
+                <button
+                  onClick={() => {
+                    const result = updateAttemptForLifter(lifter.id, queueLift, queueAttemptIndex, "");
+                    setActionNotice(result.message);
+                  }}
+                  className="h-12 rounded border border-white/20 bg-white/10 px-4 font-serif text-4xl leading-none hover:bg-white/20 touch-manipulation select-none"
+                >
+                  Pass
+                </button>
+              </div>
+              {actionNotice && (
+                <p className="mt-2 text-sm text-cyan-300">{actionNotice}</p>
+              )}
+            </div>
+          );
+        })}
+
+        {queuedAttemptRows.length === 0 && (
+          <p className="text-center text-sm text-slate-400">No pending next attempt declarations.</p>
+        )}
+
+        {/* Reset Signals */}
+        <div className="flex justify-center pt-4 border-t border-white/10">
+          <button
+            onClick={() => {
+              void resetSignals();
+              setActionNotice("Signals reset.");
+            }}
+            className="h-11 rounded border border-white/20 bg-white/10 px-6 text-white hover:bg-white/20 touch-manipulation"
+          >
+            Reset Signals
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const DisplayFullPage = () => {
   const {
     lifters,
@@ -7992,6 +8217,10 @@ const DisplayFullPage = () => {
         </div>
       </div>
     );
+  }
+
+  if (displayMode === "next_attempt_queue") {
+    return <NextAttemptQueueDisplay forceLive={forceLive} displayRootStyle={displayRootStyle} />;
   }
 
   // Viewport-fitted display screen — no page scroll, all content fits inside h-screen.
