@@ -8087,104 +8087,26 @@ const DisplayFullPage = () => {
               const color = isAdd ? GREEN : RED;
               const symbol = isAdd ? "+" : "−";
               return plates.map((plate, i) => (
-                <div key={`${isAdd ? "a" : "r"}-${i}`} className="flex flex-col items-center gap-1">
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex items-center justify-center rounded-full shrink-0 font-black"
-                      style={{ width: "26px", height: "26px", border: `2px solid ${color}`, color, fontSize: "1rem", lineHeight: 1 }}>
-                      {symbol}
-                    </div>
-                    <span className="font-black tabular-nums" style={{ color, fontSize: "clamp(1rem,2.5vw,1.6rem)" }}>
-                      {symbol}{plate} <span className="text-white font-bold text-xs">KG</span>
+                <div key={`${isAdd ? "a" : "r"}-${i}`} className="flex items-center justify-center gap-2">
+                  <div className="flex items-center justify-center rounded-full shrink-0 font-black"
+                    style={{ width: "22px", height: "22px", border: `2px solid ${color}`, color, fontSize: "0.85rem", lineHeight: 1 }}>
+                    {symbol}
+                  </div>
+                  <div className="flex flex-col leading-none">
+                    <span className="font-black tabular-nums leading-none" style={{ color, fontSize: "1.1rem" }}>
+                      {symbol}{plate} KG
+                    </span>
+                    <span className="font-black uppercase text-white leading-tight" style={{ fontSize: "0.6rem", letterSpacing: "0.1em" }}>
+                      {isAdd ? "ADD" : "REMOVE"} TO BOTH SIDES
                     </span>
                   </div>
-                  <p className="font-black uppercase text-center leading-tight" style={{ fontSize: "clamp(0.6rem,1.2vw,0.8rem)", color }}>
-                    {isAdd ? "ADD" : "REMOVE"} {plate} KG PLATES
-                  </p>
-                  <p className="font-black uppercase text-white text-center leading-tight text-xs">TO BOTH SIDES</p>
                 </div>
               ));
             };
 
             return (
               <div className="flex h-full flex-col gap-2" style={{ background: "#0a0a0a" }}>
-                {/* ── 3-panel plate section ── */}
-                <div className="shrink-0 flex gap-2" style={{ height: "185px" }}>
-                  {/* Current bar loading */}
-                  <div className="flex-1 flex flex-col rounded-lg overflow-hidden min-w-0" style={{ border: "2px solid rgba(34,197,94,0.6)", background: "#0d0d0d" }}>
-                    <div className="shrink-0 px-2 py-1 text-center border-b" style={{ borderColor: "rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.09)" }}>
-                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-green-400">CURRENT BAR LOADING</p>
-                      <p className="text-[8px] text-slate-400 truncate">{currentLifter?.name || "—"}</p>
-                    </div>
-                    <div className="flex-1 flex flex-col items-center justify-between px-2 py-1.5 min-h-0">
-                      <p className="font-black tabular-nums text-green-400 leading-none" style={{ fontSize: "clamp(1.2rem,3vw,2rem)" }}>{loadingWeight.toFixed(1)} KG</p>
-                      <div className="my-1">{renderPlateBadges(curPlates)}</div>
-                      <div className="text-center">
-                        <p className="text-[7px] font-semibold uppercase tracking-[0.25em] text-slate-400">TOTAL PER SIDE</p>
-                        <p className="font-black tabular-nums text-green-400 leading-none" style={{ fontSize: "clamp(0.85rem,2vw,1.25rem)" }}>{formatKg(curPerSideTotal)} KG</p>
-                        <p className="text-[7px] font-semibold uppercase tracking-widest text-slate-500 mt-0.5">
-                          COLLAR {includeCollars ? "ON" : "OFF"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Plate change instructions */}
-                  <div className="w-[200px] shrink-0 flex flex-col rounded-xl overflow-hidden"
-                    style={{ border: `2px solid ${noPlateChange ? "#22c55e" : (toRemove.length > 0 && toAdd.length > 0 ? "#f59e0b" : toAdd.length > 0 ? GREEN : RED)}`, background: "#0a0a0a" }}>
-                    <div className="px-2 pt-2 pb-1 text-center shrink-0">
-                      <p className="font-black uppercase leading-tight" style={{ fontSize: "clamp(0.7rem,1.4vw,0.9rem)", color: GREEN }}>PLATE CHANGE</p>
-                      <p className="font-black uppercase text-white leading-tight text-xs">INSTRUCTIONS</p>
-                    </div>
-                    <div className="flex-1 flex flex-col items-center justify-center px-3 pb-2 min-h-0 gap-1">
-                      {!nextLifter || nextLoadingWeight === null ? (
-                        <p className="text-slate-600 text-xs font-black uppercase text-center tracking-widest">NO NEXT<br />LIFTER</p>
-                      ) : noPlateChange ? (
-                        <div className="flex flex-col items-center gap-1">
-                          <div className="flex items-center justify-center rounded-full font-black" style={{ width: "36px", height: "36px", border: `2px solid ${GREEN}`, color: GREEN, fontSize: "1.2rem" }}>✓</div>
-                          <p className="font-black uppercase text-center text-xs" style={{ color: GREEN }}>NO CHANGE</p>
-                          <p className="font-black uppercase text-white text-center text-xs">SAME LOADING</p>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center w-full gap-1">
-                          {toRemove.length > 0 && renderChangeStep(toRemove, false)}
-                          {toRemove.length > 0 && toAdd.length > 0 && <div className="w-full border-t" style={{ borderColor: "rgba(255,255,255,0.1)" }} />}
-                          {toAdd.length > 0 && renderChangeStep(toAdd, true)}
-                        </div>
-                      )}
-                    </div>
-                    <div className="border-t px-2 py-1 flex items-center gap-1 shrink-0" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
-                      <span style={{ color: GREEN, fontSize: "0.75rem", fontWeight: 900 }}>ℹ</span>
-                      <p className="text-[7px] font-black uppercase tracking-wider text-white">MAKE SURE COLLARS ARE TIGHT</p>
-                    </div>
-                  </div>
-
-                  {/* Next bar loading */}
-                  <div className="flex-1 flex flex-col rounded-lg overflow-hidden min-w-0" style={{ border: "2px solid rgba(6,182,212,0.6)", background: "#0d0d0d" }}>
-                    <div className="shrink-0 px-2 py-1 text-center border-b" style={{ borderColor: "rgba(6,182,212,0.3)", background: "rgba(6,182,212,0.08)" }}>
-                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400">NEXT BAR LOADING</p>
-                      <p className="text-[8px] text-slate-400 truncate">{nextLifter?.name || "—"}</p>
-                    </div>
-                    {nextLifter && nextLoadingWeight !== null ? (
-                      <div className="flex-1 flex flex-col items-center justify-between px-2 py-1.5 min-h-0">
-                        <p className="font-black tabular-nums text-cyan-400 leading-none" style={{ fontSize: "clamp(1.2rem,3vw,2rem)" }}>{nextLoadingWeight.toFixed(1)} KG</p>
-                        <div className="my-1">{renderPlateBadges(nxtPlates)}</div>
-                        <div className="text-center">
-                          <p className="text-[7px] font-semibold uppercase tracking-[0.25em] text-slate-400">TOTAL PER SIDE</p>
-                          <p className="font-black tabular-nums text-cyan-400 leading-none" style={{ fontSize: "clamp(0.85rem,2vw,1.25rem)" }}>{formatKg(nxtPerSideTotal)} KG</p>
-                          <p className="text-[7px] font-semibold uppercase tracking-widest text-slate-500 mt-0.5">
-                            COLLAR {includeCollars ? "ON" : "OFF"}
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex-1 flex items-center justify-center">
-                        <p className="text-slate-500 text-xs font-semibold uppercase tracking-wide">No next lifter</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* ── 15-player table ── */}
+                {/* ── 15-player table (top, fills available space) ── */}
                 <div className={`min-h-0 flex-1 overflow-auto rounded-xl border ${isDarkTheme ? "border-white/10" : "border-slate-200"}`}>
                   <table className="w-full text-xs">
                     <thead>
@@ -8239,6 +8161,80 @@ const DisplayFullPage = () => {
                       )}
                     </tbody>
                   </table>
+                </div>
+
+                {/* ── 3-panel plate loading section (bottom) ── */}
+                <div className="shrink-0 flex gap-2" style={{ height: "160px" }}>
+
+                  {/* Current bar loading */}
+                  <div className="flex-1 flex flex-col rounded-lg overflow-hidden min-w-0" style={{ border: "2px solid rgba(34,197,94,0.6)", background: "#0d0d0d" }}>
+                    <div className="shrink-0 px-2 py-1 text-center border-b" style={{ borderColor: "rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.09)" }}>
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-green-400">CURRENT BAR LOADING</p>
+                      <p className="text-[8px] text-slate-400 truncate">{currentLifter?.name || "—"}</p>
+                    </div>
+                    <div className="flex-1 flex flex-col items-center justify-between px-2 py-2 min-h-0 overflow-hidden">
+                      <p className="font-black tabular-nums text-green-400 leading-none shrink-0" style={{ fontSize: "1.6rem" }}>{loadingWeight.toFixed(1)} KG</p>
+                      <div className="shrink-0">{renderPlateBadges(curPlates)}</div>
+                      <div className="text-center shrink-0">
+                        <p className="text-[7px] font-semibold uppercase tracking-[0.25em] text-slate-400">TOTAL PER SIDE</p>
+                        <p className="font-black tabular-nums text-green-400 leading-none" style={{ fontSize: "1rem" }}>{formatKg(curPerSideTotal)} KG</p>
+                        <p className="text-[7px] font-semibold uppercase tracking-widest text-slate-500 mt-0.5">COLLAR {includeCollars ? "ON" : "OFF"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Plate change instructions */}
+                  <div className="w-[190px] shrink-0 flex flex-col rounded-xl overflow-hidden"
+                    style={{ border: `2px solid ${noPlateChange ? "#22c55e" : (toRemove.length > 0 && toAdd.length > 0 ? "#f59e0b" : toAdd.length > 0 ? GREEN : RED)}`, background: "#0a0a0a" }}>
+                    <div className="shrink-0 px-2 pt-2 pb-1 text-center">
+                      <p className="font-black uppercase leading-none" style={{ fontSize: "0.75rem", color: GREEN }}>PLATE CHANGE</p>
+                      <p className="font-black uppercase text-white leading-none text-[0.65rem] mt-0.5">INSTRUCTIONS</p>
+                    </div>
+                    <div className="flex-1 flex flex-col items-center justify-center px-3 gap-1.5 overflow-hidden min-h-0">
+                      {!nextLifter || nextLoadingWeight === null ? (
+                        <p className="text-slate-600 text-[0.65rem] font-black uppercase text-center tracking-widest">NO NEXT LIFTER</p>
+                      ) : noPlateChange ? (
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="flex items-center justify-center rounded-full font-black" style={{ width: "30px", height: "30px", border: `2px solid ${GREEN}`, color: GREEN, fontSize: "1rem" }}>✓</div>
+                          <p className="font-black uppercase text-center text-[0.65rem]" style={{ color: GREEN }}>NO CHANGE · SAME LOADING</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center w-full gap-1.5">
+                          {toRemove.length > 0 && renderChangeStep(toRemove, false)}
+                          {toRemove.length > 0 && toAdd.length > 0 && <div className="w-full border-t" style={{ borderColor: "rgba(255,255,255,0.1)" }} />}
+                          {toAdd.length > 0 && renderChangeStep(toAdd, true)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="shrink-0 border-t px-2 py-1 flex items-center gap-1" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
+                      <span style={{ color: GREEN, fontSize: "0.7rem", fontWeight: 900 }}>ℹ</span>
+                      <p className="text-[7px] font-black uppercase tracking-wider text-white">MAKE SURE COLLARS ARE TIGHT</p>
+                    </div>
+                  </div>
+
+                  {/* Next bar loading */}
+                  <div className="flex-1 flex flex-col rounded-lg overflow-hidden min-w-0" style={{ border: "2px solid rgba(6,182,212,0.6)", background: "#0d0d0d" }}>
+                    <div className="shrink-0 px-2 py-1 text-center border-b" style={{ borderColor: "rgba(6,182,212,0.3)", background: "rgba(6,182,212,0.08)" }}>
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400">NEXT BAR LOADING</p>
+                      <p className="text-[8px] text-slate-400 truncate">{nextLifter?.name || "—"}</p>
+                    </div>
+                    {nextLifter && nextLoadingWeight !== null ? (
+                      <div className="flex-1 flex flex-col items-center justify-between px-2 py-2 min-h-0 overflow-hidden">
+                        <p className="font-black tabular-nums text-cyan-400 leading-none shrink-0" style={{ fontSize: "1.6rem" }}>{nextLoadingWeight.toFixed(1)} KG</p>
+                        <div className="shrink-0">{renderPlateBadges(nxtPlates)}</div>
+                        <div className="text-center shrink-0">
+                          <p className="text-[7px] font-semibold uppercase tracking-[0.25em] text-slate-400">TOTAL PER SIDE</p>
+                          <p className="font-black tabular-nums text-cyan-400 leading-none" style={{ fontSize: "1rem" }}>{formatKg(nxtPerSideTotal)} KG</p>
+                          <p className="text-[7px] font-semibold uppercase tracking-widest text-slate-500 mt-0.5">COLLAR {includeCollars ? "ON" : "OFF"}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex items-center justify-center">
+                        <p className="text-slate-500 text-xs font-semibold uppercase tracking-wide">No next lifter</p>
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               </div>
             );
