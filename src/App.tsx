@@ -7996,64 +7996,6 @@ const DisplayFullPage = () => {
 
   // Viewport-fitted display screen — no page scroll, all content fits inside h-screen.
   if (["signal_results_plate", "signal_results", "order_attempts", "results_all"].includes(displayMode)) {
-    const hasPlate = displayMode === "signal_results_plate";
-
-    const plateSplitDiagram = (
-      <div
-        className={`grid grid-cols-2 gap-2 divide-x md:gap-4 ${isDarkTheme ? "divide-white/15" : "divide-black/10"}`}
-      >
-        <div className="min-w-0 pr-2 md:pr-4">
-          <p
-            className={`text-center text-sm font-semibold uppercase tracking-[0.18em] ${
-              isDarkTheme ? "text-cyan-300" : "text-cyan-800"
-            }`}
-          >
-            Current
-          </p>
-          <p
-            className={`truncate text-center text-sm font-bold ${isDarkTheme ? "text-white" : "text-slate-900"}`}
-          >
-            {currentLifter?.name || "—"}
-          </p>
-          <div className="mt-1 min-w-0">
-            <PlateStack weight={loadingWeight} includeCollars={includeCollars} />
-          </div>
-        </div>
-        <div className="min-w-0 pl-2 md:pl-4">
-          <p
-            className={`text-center text-sm font-semibold uppercase tracking-[0.18em] ${
-              isDarkTheme ? "text-cyan-300" : "text-cyan-800"
-            }`}
-          >
-            Next
-          </p>
-          {nextLifter && nextLoadingWeight !== null ? (
-            <>
-              <p
-                className={`truncate text-center text-sm font-bold ${
-                  isDarkTheme ? "text-cyan-100" : "text-cyan-900"
-                }`}
-              >
-                {nextLifter.name || "—"}
-              </p>
-              <div className="mt-1 min-w-0">
-                <PlateStack weight={nextLoadingWeight} includeCollars={includeCollars} />
-              </div>
-            </>
-          ) : (
-            <div
-              className={`mt-1 flex min-h-[160px] flex-col items-center justify-center rounded-xl border px-2 py-6 text-center md:min-h-[200px] ${
-                isDarkTheme ? "border-white/10 bg-black/30" : "border-slate-200 bg-slate-100"
-              }`}
-            >
-              <p className={`text-sm font-semibold uppercase tracking-wide ${isDarkTheme ? "text-slate-500" : "text-slate-600"}`}>
-                No next lifter
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
 
     return (
       <div
@@ -8088,32 +8030,106 @@ const DisplayFullPage = () => {
           )}
         </div>
 
-        {/* Flight order above plate area (non-plate layouts); plate layout: order strip then one Current | Next split — not duplicated rows. */}
-        {!hasPlate && resultsInlineLiftingOrderRow ? (
+        {/* Flight order strip */}
+        {resultsInlineLiftingOrderRow ? (
           <div className={`flex-none border-b px-3 py-2 md:px-5 md:py-2.5 ${isDarkTheme ? "border-white/10" : "border-black/10"}`}>
             {resultsInlineLiftingOrderRow}
           </div>
         ) : null}
 
-        {hasPlate &&
-          (resultsInlineLiftingOrderRow ? (
-            <>
-              <div className={`flex-none border-b px-3 py-2 md:px-5 md:py-2.5 ${isDarkTheme ? "border-white/10" : "border-black/10"}`}>
-                {resultsInlineLiftingOrderRow}
-              </div>
-              <div className={`flex-none border-b px-3 py-2 md:px-5 md:py-3 ${isDarkTheme ? "border-white/10" : "border-black/10"}`}>
-                {plateSplitDiagram}
-              </div>
-            </>
-          ) : (
-            <div className={`flex-none border-b px-3 py-2 md:px-5 md:py-3 ${isDarkTheme ? "border-white/10" : "border-black/10"}`}>
-              {plateSplitDiagram}
-            </div>
-          ))}
-
         {/* ── Bottom: results / order table — scrolls internally ── */}
         <div className="min-h-0 flex-1 overflow-auto px-3 py-2 md:px-5 md:py-3">
-          {displayMode === "order_attempts" ? (
+          {displayMode === "signal_results_plate" ? (
+            <div className="flex h-full flex-col gap-2">
+              <p className={`shrink-0 text-xs font-semibold uppercase tracking-[0.2em] ${isDarkTheme ? "text-cyan-300" : "text-cyan-800"}`}>
+                {currentLift.toUpperCase()} · Attempt {currentAttemptIndex + 1}
+                {activeCompetitionGroupName && (
+                  <span className={`ml-2 font-normal normal-case tracking-normal ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                    · {activeCompetitionGroupName}
+                  </span>
+                )}
+              </p>
+              <div className={`min-h-0 flex-1 overflow-auto rounded-xl border ${isDarkTheme ? "border-white/10" : "border-slate-200"}`}>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className={`sticky top-0 text-left ${isDarkTheme ? "bg-[#0d1117] text-slate-400" : "bg-slate-100 text-slate-600"}`}>
+                      <th className="px-3 py-2 font-semibold uppercase tracking-wide">#</th>
+                      <th className="px-3 py-2 font-semibold uppercase tracking-wide">Name</th>
+                      <th className="px-3 py-2 font-semibold uppercase tracking-wide">WC</th>
+                      <th className="px-3 py-2 font-semibold uppercase tracking-wide">BW</th>
+                      <th className="px-3 py-2 font-semibold uppercase tracking-wide">Lot</th>
+                      <th className="px-3 py-2 font-semibold uppercase tracking-wide">Att 1</th>
+                      <th className="px-3 py-2 font-semibold uppercase tracking-wide">Att 2</th>
+                      <th className="px-3 py-2 font-semibold uppercase tracking-wide">Att 3</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {flightLineOrdered.map((lifter, idx) => {
+                      const isCurrent = lifter.id === flightOrderHighlightId;
+                      const atts = getAttempts(lifter, currentLift);
+                      return (
+                        <tr
+                          key={lifter.id}
+                          className={`border-t ${isDarkTheme ? "border-white/[0.07]" : "border-black/[0.06]"} ${
+                            isCurrent
+                              ? isDarkTheme
+                                ? "bg-cyan-500/15"
+                                : "bg-cyan-50"
+                              : idx % 2 === 0
+                                ? ""
+                                : isDarkTheme
+                                  ? "bg-white/[0.02]"
+                                  : "bg-black/[0.02]"
+                          }`}
+                        >
+                          <td className={`px-3 py-2 tabular-nums font-bold ${isCurrent ? (isDarkTheme ? "text-cyan-300" : "text-cyan-700") : isDarkTheme ? "text-slate-500" : "text-slate-400"}`}>
+                            {idx + 1}
+                          </td>
+                          <td className={`px-3 py-2 font-semibold ${isDarkTheme ? (isCurrent ? "text-cyan-100" : "text-white") : "text-slate-900"}`}>
+                            {lifter.name || "—"}
+                            {isCurrent && <span className={`ml-1.5 text-[10px] font-black tracking-widest ${isDarkTheme ? "text-cyan-400" : "text-cyan-600"}`}>▶</span>}
+                          </td>
+                          <td className={`px-3 py-2 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>{lifter.weightClass || "—"}</td>
+                          <td className={`px-3 py-2 tabular-nums ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                            {typeof lifter.bodyweight === "number" ? lifter.bodyweight : "—"}
+                          </td>
+                          <td className={`px-3 py-2 tabular-nums ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                            {typeof lifter.lot === "number" ? lifter.lot : "—"}
+                          </td>
+                          {([0, 1, 2] as const).map((ai) => {
+                            const att = atts[ai];
+                            const w = att?.weight;
+                            const s = att?.status ?? "UNATTEMPTED";
+                            const displayW = w !== undefined && w !== "" ? String(w) : "—";
+                            const cls =
+                              s === "GOOD"
+                                ? isDarkTheme ? "text-green-400 font-bold" : "text-green-700 font-bold"
+                                : s === "NO"
+                                  ? isDarkTheme ? "text-red-400 line-through" : "text-red-600 line-through"
+                                  : s === "PENDING"
+                                    ? isDarkTheme ? "text-amber-300 font-semibold" : "text-amber-700 font-semibold"
+                                    : isDarkTheme ? "text-slate-600" : "text-slate-400";
+                            return (
+                              <td key={ai} className={`px-3 py-2 tabular-nums ${cls}`}>
+                                {displayW}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                    {flightLineOrdered.length === 0 && (
+                      <tr>
+                        <td colSpan={8} className={`px-3 py-8 text-center ${isDarkTheme ? "text-slate-500" : "text-slate-400"}`}>
+                          No lifters in this session.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : displayMode === "order_attempts" ? (
             <div className="flex h-full flex-col gap-3">
               <div
                 className={`rounded-xl border p-3 text-center ${
