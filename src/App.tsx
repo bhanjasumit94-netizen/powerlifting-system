@@ -8086,19 +8086,19 @@ const DisplayFullPage = () => {
             const renderChangeStep = (plates: number[], isAdd: boolean) => {
               const color = isAdd ? GREEN : RED;
               const symbol = isAdd ? "+" : "−";
+              const action = isAdd ? "ADD" : "REMOVE";
               return plates.map((plate, i) => (
-                <div key={`${isAdd ? "a" : "r"}-${i}`} className="flex items-center justify-center gap-2">
-                  <div className="flex items-center justify-center rounded-full shrink-0 font-black"
-                    style={{ width: "22px", height: "22px", border: `2px solid ${color}`, color, fontSize: "0.85rem", lineHeight: 1 }}>
+                <div key={`${isAdd ? "a" : "r"}-${i}`} style={{ display: "flex", alignItems: "flex-start", gap: "8px", width: "100%" }}>
+                  <div style={{ width: "22px", height: "22px", border: `2px solid ${color}`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color, fontSize: "0.9rem", fontWeight: 900, flexShrink: 0, marginTop: "2px" }}>
                     {symbol}
                   </div>
-                  <div className="flex flex-col leading-none">
-                    <span className="font-black tabular-nums leading-none" style={{ color, fontSize: "1.1rem" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ color, fontSize: "1.3rem", fontWeight: 900, lineHeight: 1, fontVariantNumeric: "tabular-nums", marginBottom: "3px" }}>
                       {symbol}{plate} KG
-                    </span>
-                    <span className="font-black uppercase text-white leading-tight" style={{ fontSize: "0.6rem", letterSpacing: "0.1em" }}>
-                      {isAdd ? "ADD" : "REMOVE"} TO BOTH SIDES
-                    </span>
+                    </p>
+                    <p style={{ color: "#ffffff", fontSize: "0.65rem", fontWeight: 900, textTransform: "uppercase", lineHeight: 1.25, letterSpacing: "0.05em" }}>
+                      {action} {plate} KG PLATES<br />TO BOTH SIDES
+                    </p>
                   </div>
                 </div>
               ));
@@ -8164,7 +8164,7 @@ const DisplayFullPage = () => {
                 </div>
 
                 {/* ── 3-panel plate loading section (bottom) ── */}
-                <div className="shrink-0 flex gap-2" style={{ height: "160px" }}>
+                <div className="shrink-0 flex gap-2" style={{ height: "200px" }}>
 
                   {/* Current bar loading */}
                   <div className="flex-1 flex flex-col rounded-lg overflow-hidden min-w-0" style={{ border: "2px solid rgba(34,197,94,0.6)", background: "#0d0d0d" }}>
@@ -8184,7 +8184,7 @@ const DisplayFullPage = () => {
                   </div>
 
                   {/* Plate change instructions */}
-                  <div className="w-[190px] shrink-0 flex flex-col rounded-xl overflow-hidden"
+                  <div className="w-[220px] shrink-0 flex flex-col rounded-xl overflow-hidden"
                     style={{ border: `2px solid ${noPlateChange ? "#22c55e" : (toRemove.length > 0 && toAdd.length > 0 ? "#f59e0b" : toAdd.length > 0 ? GREEN : RED)}`, background: "#0a0a0a" }}>
                     <div className="shrink-0 px-2 pt-2 pb-1 text-center">
                       <p className="font-black uppercase leading-none" style={{ fontSize: "0.75rem", color: GREEN }}>PLATE CHANGE</p>
