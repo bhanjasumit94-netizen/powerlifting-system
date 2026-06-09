@@ -2739,6 +2739,7 @@ const ControlPage = () => {
   const {
     competitions,
     activeCompetitionId,
+    activeCompetitionName,
     switchCompetition,
     lifters,
     setLifters,
@@ -3231,77 +3232,212 @@ const ControlPage = () => {
     cancelOrderEdit();
   };
 
+
   return (
-    <section className="rounded-2xl border border-white/15 bg-white/5 p-4 text-white md:p-7">
-      <p className="mb-2 text-center text-sm font-semibold uppercase tracking-[0.24em] text-cyan-300">
-        Design by SUMIT BHANJA
-      </p>
-      <h1 className="mb-6 text-center text-3xl font-semibold text-white">Control Center</h1>
-      {activeCompetitionGroupName ? (
-        <p className="mb-4 text-center text-sm font-medium text-amber-200/95">
-          Group session: <span className="font-semibold text-amber-100">{activeCompetitionGroupName}</span> — lifter list and order are limited to this group.{" "}
-          <button
-            type="button"
-            onClick={() => setActiveCompetitionGroupName(null)}
-            className="inline font-semibold text-cyan-300 underline decoration-cyan-300/50 underline-offset-2 hover:text-cyan-200"
-          >
-            Show all groups
-          </button>
-        </p>
-      ) : null}
-      <div className="mb-4 rounded-2xl border border-white/15 bg-black/30 p-4 text-center">
-        {timerPhase === "ATTEMPT" ? (
-          <p className="text-lg font-semibold text-cyan-200 md:text-2xl">
-            Platform Timer: {Math.floor(timerRemainingSeconds / 60)}:{String(timerRemainingSeconds % 60).padStart(2, "0")}
-          </p>
-        ) : (
-          <p className="text-sm text-slate-300">Tap Bar loaded to start competition and 1:00 platform timer.</p>
-        )}
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-          <button
-            onClick={() => setCompetitionMode("FULL_GAME")}
-            className={`rounded px-3 py-1.5 text-xs font-semibold ${
-              competitionMode === "FULL_GAME" ? "bg-cyan-500 text-black" : "border border-white/20 bg-white/10 text-white"
-            }`}
-          >
-            Full Game
-          </button>
-          <button
-            onClick={() => setCompetitionMode("BENCH_ONLY")}
-            className={`rounded px-3 py-1.5 text-xs font-semibold ${
-              competitionMode === "BENCH_ONLY" ? "bg-violet-500 text-white" : "border border-white/20 bg-white/10 text-white"
-            }`}
-          >
-            Bench Only
-          </button>
+    <div
+      className="fixed inset-0 z-[60] flex flex-col overflow-hidden text-white"
+      style={{ background: "#0d1117", fontFamily: "system-ui, -apple-system, sans-serif" }}
+    >
+      {/* ═══ TOP NAVBAR ═══ */}
+      <header
+        className="flex flex-shrink-0 items-center justify-between px-5 py-3"
+        style={{ background: "#161b22", borderBottom: "1px solid #30363d" }}
+      >
+        {/* Left: Logo + Competition */}
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">🏆</span>
+          <div>
+            <p className="text-base font-black leading-tight text-white">{activeCompetitionName}</p>
+            <p className="text-[11px]" style={{ color: "#8b949e" }}>Powerlifting Meet Platform</p>
+          </div>
         </div>
-      </div>
+        {/* Center: Group + Lift */}
+        <div className="flex items-center gap-5">
+          <div className="flex flex-col items-center rounded px-3 py-1" style={{ background: "#21262d" }}>
+            <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#8b949e" }}>GROUP</span>
+            <span className="text-xl font-black text-white leading-none">{activeCompetitionGroupName || "ALL"}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🏃</span>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#8b949e" }}>CURRENT LIFT</p>
+              <p className="text-sm font-black text-white">{currentLift.toUpperCase()}</p>
+            </div>
+          </div>
+        </div>
+        {/* Right: Timer + Connection */}
+        <div className="flex items-center gap-5">
+          <div className="text-right">
+            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#8b949e" }}>TIME REMAINING</p>
+            <p
+              className="text-2xl font-black tabular-nums leading-tight"
+              style={{ color: "#ffd700", fontFamily: "monospace" }}
+            >
+              {String(Math.floor(timerRemainingSeconds / 60)).padStart(2, "0")}:{String(timerRemainingSeconds % 60).padStart(2, "0")}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ color: "#8b949e" }}>CONNECTION</p>
+            <span
+              className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold"
+              style={{ background: "#0a2a15", color: "#00e676" }}
+            >
+              <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ background: "#00e676" }} />
+              CONNECTED
+            </span>
+          </div>
+        </div>
+      </header>
 
-      <div className="text-center text-white">
-        <h2 className="font-serif text-4xl font-bold uppercase md:text-6xl">{currentLifter?.name || "NO LIFTER"}</h2>
-        <p className="font-serif text-5xl font-bold md:text-7xl">{currentDisplayWeight.toFixed(1)} kg</p>
-        <p className="mt-1 text-sm text-slate-300">
-          {includeCollars
-            ? `Loading with collar: ${loadingDisplayWeight.toFixed(1)} kg`
-            : `Loading without collar: ${loadingDisplayWeight.toFixed(1)} kg`}
-        </p>
-        <p className="mt-2 font-serif text-3xl font-semibold uppercase">
-          {currentLift} attempt {currentAttemptIndex + 1}
-        </p>
+      {/* ═══ BODY: sidebar + center + right ═══ */}
+      <div className="flex flex-1 overflow-hidden">
 
-        <label className="mt-3 inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm">
-          <input
-            type="checkbox"
-            checked={includeCollars}
-            onChange={(e) => setIncludeCollars(e.target.checked)}
-          />
-          Add collar ({COLLAR_PER_SIDE_KG} kg each side)
-        </label>
+        {/* ── LEFT SIDEBAR ── */}
+        <aside
+          className="flex w-60 flex-shrink-0 flex-col overflow-y-auto"
+          style={{ background: "#161b22", borderRight: "1px solid #30363d" }}
+        >
+          <nav className="flex-1 space-y-0.5 p-3 pt-4">
+            {[
+              { to: "/control", label: "Control Center", icon: "⚡" },
+              { to: "/competitions", label: "Competitions", icon: "🏆" },
+              { to: "/lifters", label: "Lifters", icon: "👤" },
+              { to: "/groups", label: "Groups", icon: "👥" },
+              { to: "/signals", label: "Referee Signals", icon: "🏴" },
+              { to: "/screen", label: "Display Screens", icon: "🖥" },
+              { to: "/results", label: "Results", icon: "📊" },
+              { to: "/settings", label: "Settings & Backup", icon: "⚙️" },
+            ].map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${isActive ? "text-white" : "hover:bg-white/5"}`
+                }
+                style={({ isActive }) =>
+                  isActive
+                    ? { background: "#1d6fe8", color: "#ffffff", borderRadius: "6px" }
+                    : { color: "#8b949e" }
+                }
+              >
+                <span className="text-base">{item.icon}</span>
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
+          </nav>
 
-        {showDecisionButtons && (
-          <div className="mt-3 flex flex-col items-center gap-3">
-            <div className="flex flex-wrap items-start justify-center gap-5">
-              <div className="flex flex-col items-center gap-1">
+          {/* Meet Status */}
+          <div className="flex-shrink-0 p-4" style={{ borderTop: "1px solid #30363d" }}>
+            <p className="mb-3 text-[10px] font-bold uppercase tracking-widest" style={{ color: "#8b949e" }}>
+              MEET STATUS
+            </p>
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs" style={{ color: "#8b949e" }}>Active Group</span>
+                <span className="text-xs font-bold" style={{ color: "#00e676" }}>
+                  {activeCompetitionGroupName || "All Groups"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs" style={{ color: "#8b949e" }}>Lifters Remaining</span>
+                <span className="text-xs font-bold text-white">{activeStageLifters.length} / {sessionLifters.length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs" style={{ color: "#8b949e" }}>Platform</span>
+                <span className="text-xs font-bold text-white">1</span>
+              </div>
+              {activeCompetitionGroupName && (
+                <button
+                  onClick={() => setActiveCompetitionGroupName(null)}
+                  className="mt-1 w-full text-left text-xs font-semibold"
+                  style={{ color: "#1d6fe8" }}
+                >
+                  ← Show All Groups
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Competition Mode */}
+          <div className="flex-shrink-0 p-4" style={{ borderTop: "1px solid #30363d" }}>
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest" style={{ color: "#8b949e" }}>
+              COMPETITION MODE
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCompetitionMode("FULL_GAME")}
+                className="flex-1 rounded py-1.5 text-xs font-bold"
+                style={
+                  competitionMode === "FULL_GAME"
+                    ? { background: "#1d6fe8", color: "#fff" }
+                    : { background: "#21262d", color: "#8b949e", border: "1px solid #30363d" }
+                }
+              >
+                Full Game
+              </button>
+              <button
+                onClick={() => setCompetitionMode("BENCH_ONLY")}
+                className="flex-1 rounded py-1.5 text-xs font-bold"
+                style={
+                  competitionMode === "BENCH_ONLY"
+                    ? { background: "#7c3aed", color: "#fff" }
+                    : { background: "#21262d", color: "#8b949e", border: "1px solid #30363d" }
+                }
+              >
+                Bench Only
+              </button>
+            </div>
+          </div>
+
+          {/* Version */}
+          <div className="flex-shrink-0 px-4 py-3">
+            <p className="text-[10px]" style={{ color: "#8b949e" }}>POWERLIFTING MEET CONSOLE v2.0.0</p>
+          </div>
+        </aside>
+
+        {/* ── CENTER MAIN PANEL ── */}
+        <main className="flex flex-1 flex-col gap-4 overflow-y-auto p-5">
+
+          {/* Current Lifter Card */}
+          <div
+            className="flex-shrink-0 rounded-lg p-6 text-center"
+            style={{ background: "#161b22", border: "1px solid #30363d" }}
+          >
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.3em]" style={{ color: "#00e676" }}>
+              CURRENT LIFTER
+            </p>
+            <h2 className="text-6xl font-black uppercase leading-none tracking-tight text-white">
+              {currentLifter?.name || "NO LIFTER"}
+            </h2>
+            <div className="mt-3 flex items-center justify-center gap-4 text-sm" style={{ color: "#8b949e" }}>
+              <div className="h-px w-16 flex-shrink-0" style={{ background: "#00e676" }} />
+              BW {currentLifter?.bodyweight ?? "—"} KG &nbsp;|&nbsp; LOT {currentLifter?.lot || "—"}
+              <div className="h-px w-16 flex-shrink-0" style={{ background: "#00e676" }} />
+            </div>
+            <p className="mt-4 text-8xl font-black leading-none tabular-nums" style={{ color: "#00e676" }}>
+              {currentDisplayWeight.toFixed(1)}<span className="ml-2 text-4xl font-bold">KG</span>
+            </p>
+            <div className="mt-3 flex items-center justify-center gap-2">
+              <span className="text-lg">🏃</span>
+              <span className="text-xl font-black text-white">{currentLift.toUpperCase()}</span>
+              <span className="mx-1 text-lg" style={{ color: "#30363d" }}>•</span>
+              <span className="text-xl font-black" style={{ color: "#1d6fe8" }}>ATTEMPT {currentAttemptIndex + 1}</span>
+            </div>
+
+            {/* Bar Status Pill */}
+            <div className="mt-4 flex justify-center">
+              <div
+                className="inline-flex items-center gap-3 rounded-full px-6 py-2 text-sm"
+                style={{ background: "#0d1117", border: "1px solid #30363d" }}
+              >
+                <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#8b949e" }}>BAR STATUS</span>
+                <span className="font-bold" style={{ color: "#00e676" }}>✅ BAR LOADED</span>
+              </div>
+            </div>
+
+            {/* Good / No Lift */}
+            {showDecisionButtons && (
+              <div className="mt-4 flex gap-3">
                 <button
                   onClick={() => {
                     void applyRefereeDecision(["GOOD", "GOOD", "GOOD"])
@@ -3314,15 +3450,11 @@ const ControlPage = () => {
                   onMouseDown={(event) => event.preventDefault()}
                   onContextMenu={(event) => event.preventDefault()}
                   draggable={false}
-                  style={{ WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}
-                  className="select-none touch-manipulation rounded border border-emerald-700 bg-emerald-300 px-7 py-3 text-3xl font-black text-black"
+                  style={{ WebkitUserSelect: "none", userSelect: "none", background: "#00e676", borderRadius: "6px" }}
+                  className="flex flex-1 select-none touch-manipulation items-center justify-center gap-2 py-4 text-lg font-black text-black"
                 >
-                  G
+                  ✓ GOOD LIFT
                 </button>
-                <p className="select-none text-sm font-black uppercase tracking-[0.14em] text-emerald-300">GOOD LIFT</p>
-              </div>
-
-              <div className="flex flex-col items-center gap-1">
                 <button
                   onClick={() => {
                     void applyRefereeDecision(["NO", "NO", "NO"])
@@ -3335,343 +3467,659 @@ const ControlPage = () => {
                   onMouseDown={(event) => event.preventDefault()}
                   onContextMenu={(event) => event.preventDefault()}
                   draggable={false}
-                  style={{ WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}
-                  className="select-none touch-manipulation rounded border border-rose-700 bg-rose-300 px-7 py-3 text-3xl font-black text-black"
+                  style={{ WebkitUserSelect: "none", userSelect: "none", background: "#f44336", borderRadius: "6px" }}
+                  className="flex flex-1 select-none touch-manipulation items-center justify-center gap-2 py-4 text-lg font-black text-white"
                 >
-                  N
+                  ✗ NO LIFT
                 </button>
-                <p className="select-none text-sm font-black uppercase tracking-[0.14em] text-rose-300">NO LIFT</p>
               </div>
+            )}
+            {!showDecisionButtons && (
+              <button
+                onClick={() => setShowDecisionButtons(true)}
+                className="mt-4 rounded-lg px-5 py-2 text-sm font-semibold text-white"
+                style={{ background: "#21262d", border: "1px solid #30363d" }}
+              >
+                Show Decision Buttons
+              </button>
+            )}
+            {showDecisionButtons && (
+              <button
+                onClick={() => setShowDecisionButtons(false)}
+                className="mt-2 rounded px-3 py-1 text-xs"
+                style={{ color: "#8b949e" }}
+              >
+                Hide buttons
+              </button>
+            )}
+
+            {/* Bar Loaded + Reset + Collar */}
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <button
+                onClick={() => {
+                  if (!currentLifter) {
+                    setActionNotice("Add/select a lifter first.");
+                    return;
+                  }
+                  startAttemptClock();
+                  setActionNotice("Bar loaded. 1:00 platform timer started.");
+                }}
+                className="rounded-lg px-5 py-2.5 text-sm font-bold text-white"
+                style={{ background: "#21262d", border: "1px solid #30363d" }}
+              >
+                🔔 Bar Loaded
+              </button>
+              <button
+                onClick={() => {
+                  void resetSignals().then(() => {
+                    clearTimerState();
+                    setActionNotice("Signals and platform timer reset.");
+                  });
+                }}
+                className="rounded-lg px-5 py-2.5 text-sm font-bold text-white"
+                style={{ background: "#21262d", border: "1px solid #30363d" }}
+              >
+                ↺ Reset
+              </button>
+              <label
+                className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-xs"
+                style={{ background: "#21262d", border: "1px solid #30363d", color: "#8b949e" }}
+              >
+                <input
+                  type="checkbox"
+                  checked={includeCollars}
+                  onChange={(e) => setIncludeCollars(e.target.checked)}
+                />
+                Collars ({COLLAR_PER_SIDE_KG} kg ea.)
+              </label>
             </div>
+            {actionNotice && (
+              <p className="mt-3 text-xs font-semibold" style={{ color: "#00e676" }}>{actionNotice}</p>
+            )}
 
-            <button
-              onClick={() => setShowDecisionButtons(false)}
-              className="rounded border border-white/20 bg-white/10 px-3 py-1 text-lg text-white"
-            >
-              Hide buttons
-            </button>
-          </div>
-        )}
-
-        {!showDecisionButtons && (
-          <button
-            onClick={() => setShowDecisionButtons(true)}
-            className="mt-3 rounded border border-white/20 bg-white/10 px-3 py-1 text-lg text-white"
-          >
-            Show buttons
-          </button>
-        )}
-
-        <p className="mt-5 text-4xl">-</p>
-        <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
-          <button
-            onClick={() => {
-              if (!currentLifter) {
-                setActionNotice("Add/select a lifter first.");
-                return;
-              }
-              startAttemptClock();
-              setActionNotice("Bar loaded. 1:00 platform timer started.");
-            }}
-            className="rounded border border-white/20 bg-white/10 px-4 py-2 font-serif text-4xl leading-none"
-          >
-            Bar loaded
-          </button>
-          <button
-            onClick={() => {
-              void resetSignals().then(() => {
-                clearTimerState();
-                setActionNotice("Signals and platform timer reset.");
-              });
-            }}
-            className="rounded border border-white/20 bg-white/10 px-4 py-2 font-serif text-4xl leading-none"
-          >
-            Reset
-          </button>
-        </div>
-        {actionNotice && <p className="mt-3 text-sm text-cyan-300">{actionNotice}</p>}
-      </div>
-
-      <hr className="my-6 border-white/15" />
-
-      <div className="space-y-6">
-        {activeNextAttempt && (
-          <p className="text-center text-xs uppercase tracking-[0.2em] text-violet-300">
-            Next Attempt Queue ({queuedAttemptRows.length})
-          </p>
-        )}
-        {queuedAttemptRows.map(({ entry, lifter }, queueIndex) => {
-          const queueLift = entry.lift;
-          const queueAttemptIndex = entry.attemptIndex;
-          const attempt = getAttempts(lifter, queueLift)[queueAttemptIndex];
-          const previousAttempt = queueAttemptIndex > 0 ? getAttempts(lifter, queueLift)[queueAttemptIndex - 1] : null;
-          const minQuickWeight = typeof previousAttempt?.weight === "number" ? previousAttempt.weight : 20;
-          const baseWeight =
-            typeof attempt?.weight === "number" ? attempt.weight : resolveAttemptWeight(lifter, queueLift, queueAttemptIndex);
-          const quickWeights = buildQuickWeights(baseWeight, minQuickWeight);
-          const draftKey = `${lifter.id}-${queueLift}-${queueAttemptIndex}`;
-          const draft = quickWeightDraft[draftKey] ?? "";
-          const queueKey = `${entry.lifterId}-${entry.lift}-${entry.attemptIndex}`;
-          const startedAt = queueTimerStarts[queueKey] ?? now;
-          const perLifterSignedSeconds = Math.ceil((startedAt + ONE_MINUTE_MS - now) / 1000);
-
-          const applyWeight = (nextWeight: number) => {
-            const result = updateAttemptForLifter(lifter.id, queueLift, queueAttemptIndex, nextWeight);
-            if (result.ok) {
-              setQuickWeightDraft((prev) => ({ ...prev, [draftKey]: String(nextWeight) }));
-            }
-            setActionNotice(result.message);
-          };
-
-          return (
-            <div
-              key={`${lifter.id}-${queueLift}-${queueAttemptIndex}`}
-              className="border-t border-white/10 pt-4 text-center first:border-t-0 first:pt-0"
-            >
-              <div className="flex items-center justify-center gap-3">
-                <h3 className="font-serif text-4xl font-bold uppercase">
-                  {lifter.lot || "-"} {lifter.name}
-                </h3>
-                <span className="rounded-lg border border-violet-300/40 bg-violet-500/15 px-3 py-1 text-base font-semibold text-violet-100 md:text-lg">
-                  {formatSignedTimer(perLifterSignedSeconds)}
-                </span>
-              </div>
-              <p className="mt-1 text-sm uppercase tracking-[0.2em] text-violet-200">
-                {queueLift} attempt {queueAttemptIndex + 1}
+            {/* Referee Signals */}
+            <div className="mt-5">
+              <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.3em]" style={{ color: "#8b949e" }}>
+                REFEREE SIGNALS
               </p>
-              {queueIndex === 0 ? (
-                <p className="mt-1 text-xs uppercase tracking-[0.15em] text-cyan-200">Current next attempt</p>
-              ) : (
-                <p className="mt-1 text-xs uppercase tracking-[0.15em] text-slate-400">Waiting in next-attempt list</p>
-              )}
-              <div className="mx-auto mt-3 grid max-w-5xl grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-6">
-                {quickWeights.map((w) => (
-                  <button
-                    key={`${lifter.id}-${w}`}
-                    onClick={() => applyWeight(w)}
-                    className="rounded border border-white/20 bg-white/10 py-1 text-2xl"
+              <div className="flex items-center justify-center gap-8">
+                {refereeSignals.map((sig, i) => (
+                  <div
+                    key={i}
+                    className="flex h-14 w-14 items-center justify-center rounded-full text-xl font-black"
+                    style={{
+                      border: `2px solid ${sig === "GOOD" ? "#00e676" : sig === "NO" ? "#f44336" : "#ffffff"}`,
+                      background: sig === "GOOD" ? "#0a1f12" : sig === "NO" ? "#2a0a0a" : "transparent",
+                      color: sig === "GOOD" ? "#00e676" : sig === "NO" ? "#f44336" : "transparent",
+                    }}
                   >
-                    {w}
-                  </button>
+                    {sig === "GOOD" ? "✓" : sig === "NO" ? "✗" : ""}
+                  </div>
                 ))}
               </div>
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                <input
-                  value={draft}
-                  onChange={(e) => setQuickWeightDraft((prev) => ({ ...prev, [draftKey]: e.target.value }))}
-                  placeholder=""
-                  className="h-12 w-28 rounded border border-white/20 bg-white/10 px-2 text-center text-2xl text-white"
-                />
-                <button
-                  onClick={() => {
-                    const currentValue = Number(draft || 0);
-                    const nextValue = Number.isFinite(currentValue) && currentValue > 0 ? currentValue + 2.5 : baseWeight + 2.5;
-                    applyWeight(Number(nextValue.toFixed(1)));
-                  }}
-                  className="h-12 w-14 rounded border border-white/20 bg-white/10 text-4xl leading-none"
-                >
-                  +
-                </button>
-                <button
-                  onClick={() => {
-                    const result = updateAttemptForLifter(lifter.id, queueLift, queueAttemptIndex, "");
-                    setActionNotice(result.message);
-                  }}
-                  className="h-12 rounded border border-white/20 bg-white/10 px-4 font-serif text-4xl leading-none"
-                >
-                  Pass
-                </button>
-              </div>
             </div>
-          );
-        })}
-        {queuedAttemptRows.length === 0 && (
-          <p className="text-center text-sm text-slate-300">No pending next attempt declaration.</p>
-        )}
-
-        <div className="mx-auto max-w-4xl border-t border-white/10 pt-6">
-          <div className="mb-3 flex justify-center">
-            <button onClick={resetSignals} className="h-11 rounded border border-white/20 bg-white/10 px-4 text-white">
-              Reset Signals
-            </button>
           </div>
 
-          <div className="rounded-2xl border border-white/15 bg-black/20 p-4">
-            <p className="mb-3 text-center text-xs uppercase tracking-[0.2em] text-cyan-300">
-              IPF Lifter Order ({currentLift.toUpperCase()} A{currentAttemptIndex + 1})
-            </p>
-            <div className="mb-3 flex justify-center">
-              <button
-                onClick={resetControlOrderToIPF}
-                className="h-10 rounded-lg bg-cyan-500 px-4 text-sm font-semibold text-black"
+          {/* Lift History */}
+          {currentLifter && (() => {
+            const attempts = getAttempts(currentLifter, currentLift);
+            let bestWeight: number | null = null;
+            attempts.forEach((a) => {
+              if (a.status === "GOOD" && typeof a.weight === "number") {
+                if (bestWeight === null || a.weight > bestWeight) bestWeight = a.weight;
+              }
+            });
+            return (
+              <div
+                className="flex-shrink-0 rounded-lg p-4"
+                style={{ background: "#161b22", border: "1px solid #30363d" }}
               >
-                Reset To IPF Order
+                <p className="mb-3 text-xs font-bold uppercase tracking-widest text-white">
+                  {currentLifter.name} – {currentLift.toUpperCase()} HISTORY
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {["ATTEMPT 1", "ATTEMPT 2", "ATTEMPT 3"].map((label, i) => {
+                    const attempt = attempts[i];
+                    return (
+                      <div key={label} className="rounded-lg p-3 text-center" style={{ background: "#0d1117", border: "1px solid #30363d" }}>
+                        <p className="mb-2 text-[10px] font-bold uppercase tracking-widest" style={{ color: "#8b949e" }}>{label}</p>
+                        <p
+                          className="text-base font-black"
+                          style={{ color: attempt?.status === "GOOD" ? "#00e676" : attempt?.status === "NO" ? "#f44336" : "#8b949e" }}
+                        >
+                          {typeof attempt?.weight === "number" ? `${attempt.weight.toFixed(1)} KG` : "—"}
+                        </p>
+                        <p
+                          className="mt-1 text-[10px] font-semibold uppercase"
+                          style={{ color: attempt?.status === "GOOD" ? "#00e676" : attempt?.status === "NO" ? "#f44336" : "#8b949e" }}
+                        >
+                          {attempt?.status === "UNATTEMPTED" ? "PENDING" : (attempt?.status ?? "PENDING")}
+                        </p>
+                      </div>
+                    );
+                  })}
+                  <div
+                    className="rounded-lg p-3 text-center"
+                    style={{ background: "#0d1117", border: `1px solid ${bestWeight !== null ? "#ffd700" : "#30363d"}` }}
+                  >
+                    <p className="mb-2 text-[10px] font-bold uppercase tracking-widest" style={{ color: "#ffd700" }}>🏆 BEST</p>
+                    <p className="text-base font-black" style={{ color: "#00e676" }}>
+                      {bestWeight !== null ? `${bestWeight.toFixed(1)} KG` : "—"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Next Attempt Queue */}
+          <div
+            className="flex-shrink-0 rounded-lg p-4"
+            style={{ background: "#161b22", border: "1px solid #30363d" }}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#8b949e" }}>
+                NEXT ATTEMPT QUEUE ({queuedAttemptRows.length})
+              </p>
+              <button
+                onClick={resetSignals}
+                className="rounded px-3 py-1 text-xs font-semibold"
+                style={{ background: "#21262d", border: "1px solid #30363d", color: "#8b949e" }}
+              >
+                Reset Signals
               </button>
             </div>
-            <div className="mb-3">
-              <input
-                value={ipfOrderSearchTerm}
-                onChange={(e) => setIpfOrderSearchTerm(e.target.value)}
-                placeholder="Search lifter in IPF order"
-                className="h-10 w-full rounded-lg border border-white/20 bg-black/40 px-3 text-sm text-white"
-              />
+            <div className="space-y-3">
+              {queuedAttemptRows.map(({ entry, lifter }, queueIndex) => {
+                const queueLift = entry.lift;
+                const queueAttemptIndex = entry.attemptIndex;
+                const attempt = getAttempts(lifter, queueLift)[queueAttemptIndex];
+                const previousAttempt = queueAttemptIndex > 0 ? getAttempts(lifter, queueLift)[queueAttemptIndex - 1] : null;
+                const minQuickWeight = typeof previousAttempt?.weight === "number" ? previousAttempt.weight : 20;
+                const baseWeight =
+                  typeof attempt?.weight === "number" ? attempt.weight : resolveAttemptWeight(lifter, queueLift, queueAttemptIndex);
+                const quickWeights = buildQuickWeights(baseWeight, minQuickWeight);
+                const draftKey = `${lifter.id}-${queueLift}-${queueAttemptIndex}`;
+                const draft = quickWeightDraft[draftKey] ?? "";
+                const queueKey = `${entry.lifterId}-${entry.lift}-${entry.attemptIndex}`;
+                const startedAt = queueTimerStarts[queueKey] ?? now;
+                const perLifterSignedSeconds = Math.ceil((startedAt + ONE_MINUTE_MS - now) / 1000);
+
+                const applyWeight = (nextWeight: number) => {
+                  const result = updateAttemptForLifter(lifter.id, queueLift, queueAttemptIndex, nextWeight);
+                  if (result.ok) {
+                    setQuickWeightDraft((prev) => ({ ...prev, [draftKey]: String(nextWeight) }));
+                  }
+                  setActionNotice(result.message);
+                };
+
+                return (
+                  <div
+                    key={`${lifter.id}-${queueLift}-${queueAttemptIndex}`}
+                    className="rounded-lg p-3"
+                    style={{
+                      background: "#0d1117",
+                      border: `1px solid ${queueIndex === 0 ? "#1d6fe8" : "#30363d"}`,
+                    }}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-bold text-white">{lifter.lot || "—"} — {lifter.name}</p>
+                        <p className="mt-0.5 text-xs" style={{ color: "#8b949e" }}>
+                          {queueLift.toUpperCase()} ATTEMPT {queueAttemptIndex + 1}
+                        </p>
+                      </div>
+                      <div className="flex flex-shrink-0 items-center gap-2">
+                        {queueIndex === 0 && (
+                          <span
+                            className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
+                            style={{ background: "#0a1829", color: "#1d6fe8", border: "1px solid #1d6fe8" }}
+                          >
+                            CURRENT NEXT
+                          </span>
+                        )}
+                        <span
+                          className="rounded px-2 py-1 text-sm font-bold tabular-nums"
+                          style={{ background: "#21262d", color: perLifterSignedSeconds < 0 ? "#f44336" : "#8b949e", border: "1px solid #30363d" }}
+                        >
+                          {formatSignedTimer(perLifterSignedSeconds)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-3 grid grid-cols-5 gap-1.5">
+                      {quickWeights.map((w) => (
+                        <button
+                          key={`${lifter.id}-${w}`}
+                          onClick={() => applyWeight(w)}
+                          className="rounded py-1.5 text-sm font-bold"
+                          style={{
+                            background: attempt?.weight === w ? "#1d6fe8" : "#21262d",
+                            color: "#ffffff",
+                            border: `1px solid ${attempt?.weight === w ? "#1d6fe8" : "#30363d"}`,
+                          }}
+                        >
+                          {w}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="mt-2 flex gap-2">
+                      <input
+                        value={draft}
+                        onChange={(e) => setQuickWeightDraft((prev) => ({ ...prev, [draftKey]: e.target.value }))}
+                        placeholder="Custom kg"
+                        className="h-9 flex-1 rounded border px-2 text-sm text-white"
+                        style={{ background: "#161b22", borderColor: "#30363d" }}
+                      />
+                      <button
+                        onClick={() => {
+                          const currentValue = Number(draft || 0);
+                          const nextValue = Number.isFinite(currentValue) && currentValue > 0 ? currentValue + 2.5 : baseWeight + 2.5;
+                          applyWeight(Number(nextValue.toFixed(1)));
+                        }}
+                        className="h-9 w-10 rounded text-lg font-bold text-white"
+                        style={{ background: "#21262d", border: "1px solid #30363d" }}
+                      >
+                        +
+                      </button>
+                      <button
+                        onClick={() => {
+                          const result = updateAttemptForLifter(lifter.id, queueLift, queueAttemptIndex, "");
+                          setActionNotice(result.message);
+                        }}
+                        className="h-9 rounded px-3 text-sm font-bold"
+                        style={{ background: "#21262d", border: "1px solid #30363d", color: "#8b949e" }}
+                      >
+                        Pass
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              {queuedAttemptRows.length === 0 && (
+                <p className="py-3 text-center text-sm" style={{ color: "#8b949e" }}>
+                  No pending next attempt declaration.
+                </p>
+              )}
             </div>
-            {sessionFlightComplete ? (
-              <div
-                role="status"
-                className="mb-3 rounded-xl border border-emerald-400/45 bg-emerald-500/15 px-4 py-3 text-center"
+          </div>
+
+          {/* IPF Lifter Order */}
+          <div
+            className="flex-shrink-0 rounded-lg p-4"
+            style={{ background: "#161b22", border: "1px solid #30363d" }}
+          >
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#8b949e" }}>
+                IPF ORDER — {currentLift.toUpperCase()} A{currentAttemptIndex + 1}
+              </p>
+              <button
+                onClick={resetControlOrderToIPF}
+                className="rounded px-3 py-1.5 text-xs font-bold text-black"
+                style={{ background: "#00e676" }}
               >
-                <p className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-200">All lifters complete</p>
-                <p className="mt-1 text-xs leading-snug text-emerald-100/90">
-                  Everyone in this session has finished their scheduled attempts (
-                  {competitionMode === "BENCH_ONLY" ? "bench press only" : "squat, bench, deadlift"}). You can review or
-                  fix results in Manage Lifters if needed.
+                Reset to IPF Order
+              </button>
+            </div>
+            <input
+              value={ipfOrderSearchTerm}
+              onChange={(e) => setIpfOrderSearchTerm(e.target.value)}
+              placeholder="Search lifter..."
+              className="mb-3 h-9 w-full rounded border px-3 text-sm text-white"
+              style={{ background: "#0d1117", borderColor: "#30363d" }}
+            />
+            {sessionFlightComplete && (
+              <div
+                className="mb-3 rounded-lg px-4 py-3 text-center"
+                style={{ background: "#0a1f12", border: "1px solid #00e676" }}
+              >
+                <p className="text-sm font-bold uppercase tracking-widest" style={{ color: "#00e676" }}>
+                  All lifters complete
+                </p>
+                <p className="mt-1 text-xs" style={{ color: "#8b949e" }}>
+                  Everyone in this session has finished their scheduled attempts
+                  ({competitionMode === "BENCH_ONLY" ? "bench press only" : "squat, bench, deadlift"}).
                 </p>
               </div>
-            ) : null}
-            <div className="space-y-2">
+            )}
+            <div className="space-y-1.5">
               {visibleOrderLifters.map((lifter, index) => {
                 const orderIndex = controlOrderLifters.findIndex((row) => row.id === lifter.id);
                 return (
-                <div
-                  key={lifter.id}
-                  draggable={editingOrderLifterId !== lifter.id}
-                  onDragStart={() => setDraggingOrderIndex(orderIndex)}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={() => {
-                    if (draggingOrderIndex === null) return;
-                    reorderCurrentStage(draggingOrderIndex, orderIndex);
-                    setDraggingOrderIndex(null);
-                  }}
-                  onDragEnd={() => setDraggingOrderIndex(null)}
-                  className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 ${
-                    lifter.id === highlightedOrderLifterId
-                      ? "border-cyan-300/60 bg-cyan-500/10"
-                      : lifter.id === updatedOrderLifterId
-                        ? "border-amber-300/60 bg-amber-500/10"
-                      : "border-white/15 bg-white/5"
-                  }`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-white">
-                      {index + 1}. {lifter.name}
-                    </p>
-                    {editingOrderLifterId === lifter.id ? (
-                      <div className="mt-2 grid gap-2 md:grid-cols-3">
-                        <input
-                          type="number"
-                          step="2.5"
-                          value={orderEditAttempt}
-                          onChange={(e) => setOrderEditAttempt(e.target.value)}
-                          placeholder={`${currentLift.toUpperCase()} A${currentAttemptIndex + 1}`}
-                          className="h-9 rounded border border-white/20 bg-black/40 px-2 text-sm text-white"
-                        />
-                        <input
-                          type="number"
-                          value={orderEditBodyweight}
-                          onChange={(e) => setOrderEditBodyweight(e.target.value)}
-                          placeholder="Bodyweight"
-                          className="h-9 rounded border border-white/20 bg-black/40 px-2 text-sm text-white"
-                        />
-                        <select
-                          value={orderEditLot}
-                          onChange={(e) => setOrderEditLot(e.target.value)}
-                          className="h-9 rounded border border-white/20 bg-black/40 px-2 text-sm text-white"
-                        >
-                          <option value="" className="bg-slate-900">
-                            Lot
-                          </option>
-                          {LOT_NUMBER_OPTIONS.map((lotNo) => (
-                            <option key={lotNo} value={lotNo} className="bg-slate-900">
-                              {lotNo}
-                            </option>
-                          ))}
-                        </select>
+                  <div
+                    key={lifter.id}
+                    draggable={editingOrderLifterId !== lifter.id}
+                    onDragStart={() => setDraggingOrderIndex(orderIndex)}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={() => {
+                      if (draggingOrderIndex === null) return;
+                      reorderCurrentStage(draggingOrderIndex, orderIndex);
+                      setDraggingOrderIndex(null);
+                    }}
+                    onDragEnd={() => setDraggingOrderIndex(null)}
+                    className="rounded-lg px-3 py-2"
+                    style={{
+                      background:
+                        lifter.id === highlightedOrderLifterId
+                          ? "#0a1829"
+                          : lifter.id === updatedOrderLifterId
+                            ? "#1a1a0a"
+                            : "#21262d",
+                      border: `1px solid ${
+                        lifter.id === highlightedOrderLifterId
+                          ? "#1d6fe8"
+                          : lifter.id === updatedOrderLifterId
+                            ? "#ffd700"
+                            : "#30363d"
+                      }`,
+                    }}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-white">
+                          {index + 1}. {lifter.name}
+                        </p>
+                        {editingOrderLifterId === lifter.id ? (
+                          <div className="mt-2 grid grid-cols-3 gap-2">
+                            <input
+                              type="number"
+                              step="2.5"
+                              value={orderEditAttempt}
+                              onChange={(e) => setOrderEditAttempt(e.target.value)}
+                              placeholder={`${currentLift.toUpperCase()} A${currentAttemptIndex + 1}`}
+                              className="h-8 rounded border px-2 text-xs text-white"
+                              style={{ background: "#0d1117", borderColor: "#30363d" }}
+                            />
+                            <input
+                              type="number"
+                              value={orderEditBodyweight}
+                              onChange={(e) => setOrderEditBodyweight(e.target.value)}
+                              placeholder="Bodyweight"
+                              className="h-8 rounded border px-2 text-xs text-white"
+                              style={{ background: "#0d1117", borderColor: "#30363d" }}
+                            />
+                            <select
+                              value={orderEditLot}
+                              onChange={(e) => setOrderEditLot(e.target.value)}
+                              className="h-8 rounded border px-2 text-xs text-white"
+                              style={{ background: "#0d1117", borderColor: "#30363d" }}
+                            >
+                              <option value="" style={{ background: "#0d1117" }}>Lot</option>
+                              {LOT_NUMBER_OPTIONS.map((lotNo) => (
+                                <option key={lotNo} value={lotNo} style={{ background: "#0d1117" }}>{lotNo}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : (
+                          <p className="text-xs" style={{ color: "#8b949e" }}>
+                            Next: {getAttemptValue(lifter, currentLift, currentAttemptIndex) ?? "—"} kg | BW{" "}
+                            {typeof lifter.bodyweight === "number" ? lifter.bodyweight : "—"} | Lot {lifter.lot || "—"}
+                          </p>
+                        )}
                       </div>
-                    ) : (
-                      <p className="text-xs text-slate-300">
-                        Next: {getAttemptValue(lifter, currentLift, currentAttemptIndex) ?? "-"} kg | BW {typeof lifter.bodyweight === "number" ? lifter.bodyweight : "-"} | Lot {lifter.lot || "-"}
-                      </p>
-                    )}
+                      <div className="flex flex-shrink-0 flex-wrap items-center gap-1">
+                        {editingOrderLifterId === lifter.id ? (
+                          <>
+                            <button
+                              onClick={() => saveOrderEdit(lifter)}
+                              className="rounded px-2 py-1 text-xs font-bold text-black"
+                              style={{ background: "#00e676" }}
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={cancelOrderEdit}
+                              className="rounded px-2 py-1 text-xs font-bold text-white"
+                              style={{ background: "#30363d" }}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => reorderCurrentStage(orderIndex, Math.max(0, orderIndex - 1))}
+                              disabled={orderIndex <= 0}
+                              className="rounded px-2 py-1 text-xs font-bold text-white disabled:opacity-30"
+                              style={{ background: "#30363d" }}
+                            >
+                              ↑
+                            </button>
+                            <button
+                              onClick={() =>
+                                reorderCurrentStage(orderIndex, Math.min(controlOrderLifters.length - 1, orderIndex + 1))
+                              }
+                              disabled={orderIndex === -1 || orderIndex >= controlOrderLifters.length - 1}
+                              className="rounded px-2 py-1 text-xs font-bold text-white disabled:opacity-30"
+                              style={{ background: "#30363d" }}
+                            >
+                              ↓
+                            </button>
+                            <button
+                              onClick={() => openOrderEdit(lifter)}
+                              className="rounded px-2 py-1 text-xs font-bold text-white"
+                              style={{ background: "#7c3aed" }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => markLifterDisqualified(lifter.id)}
+                              className="rounded px-2 py-1 text-xs font-bold text-white"
+                              style={{ background: "#7f1d1d" }}
+                            >
+                              DQ
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={() => {
+                            if (orderIndex > 0) {
+                              reorderCurrentStage(orderIndex, 0);
+                            }
+                            setCurrentLifterId(lifter.id);
+                            setCurrentLift(currentLift);
+                            setCurrentAttemptIndex(currentAttemptIndex);
+                            setActionNotice(
+                              orderIndex > 0
+                                ? `Current lifter set: ${lifter.name} — moved to top of order.`
+                                : `Current lifter set: ${lifter.name}`,
+                            );
+                          }}
+                          className="rounded px-2 py-1 text-xs font-bold text-white"
+                          style={{ background: "#1d6fe8" }}
+                        >
+                          Set ✓
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {editingOrderLifterId === lifter.id ? (
-                      <>
-                        <button
-                          onClick={() => saveOrderEdit(lifter)}
-                          className="h-9 rounded bg-emerald-500 px-3 text-sm font-semibold text-black"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={cancelOrderEdit}
-                          className="h-9 rounded bg-white/10 px-3 text-sm font-semibold text-white"
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => reorderCurrentStage(orderIndex, Math.max(0, orderIndex - 1))}
-                          className="h-9 rounded bg-white/10 px-3 text-sm font-semibold text-white"
-                          disabled={orderIndex <= 0}
-                        >
-                          Up
-                        </button>
-                        <button
-                          onClick={() =>
-                            reorderCurrentStage(orderIndex, Math.min(controlOrderLifters.length - 1, orderIndex + 1))
-                          }
-                          className="h-9 rounded bg-white/10 px-3 text-sm font-semibold text-white"
-                          disabled={orderIndex === -1 || orderIndex >= controlOrderLifters.length - 1}
-                        >
-                          Down
-                        </button>
-                        <button className="h-9 rounded border border-white/20 bg-black/20 px-3 text-sm font-semibold uppercase tracking-[0.2em] text-slate-200">
-                          Drag
-                        </button>
-                        <button
-                          onClick={() => openOrderEdit(lifter)}
-                          className="h-9 rounded bg-purple-500 px-3 text-sm font-semibold text-white"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => markLifterDisqualified(lifter.id)}
-                          className="h-9 rounded bg-rose-500 px-3 text-sm font-semibold text-white"
-                        >
-                          Disqualified
-                        </button>
-                      </>
-                    )}
-                    <button
-                      onClick={() => {
-                        if (orderIndex > 0) {
-                          reorderCurrentStage(orderIndex, 0);
-                        }
-                        setCurrentLifterId(lifter.id);
-                        setCurrentLift(currentLift);
-                        setCurrentAttemptIndex(currentAttemptIndex);
-                        setActionNotice(
-                          orderIndex > 0
-                            ? `Current lifter set: ${lifter.name} — moved to top of order.`
-                            : `Current lifter set: ${lifter.name}`,
-                        );
-                      }}
-                      className="h-9 rounded bg-cyan-500 px-3 text-sm font-semibold text-black"
-                    >
-                      Set Current
-                    </button>
-                  </div>
-                </div>
-              );})}
-              {visibleOrderLifters.length === 0 && <p className="text-center text-sm text-slate-400">No lifters found for this stage.</p>}
+                );
+              })}
+              {visibleOrderLifters.length === 0 && (
+                <p className="py-3 text-center text-sm" style={{ color: "#8b949e" }}>
+                  No lifters found for this stage.
+                </p>
+              )}
             </div>
           </div>
-        </div>
+        </main>
+
+        {/* ── RIGHT PANEL ── */}
+        <aside
+          className="flex w-80 flex-shrink-0 flex-col gap-4 overflow-y-auto p-4"
+          style={{ borderLeft: "1px solid #30363d" }}
+        >
+          {/* Next Lifters */}
+          <div className="rounded-lg p-4" style={{ background: "#161b22", border: "1px solid #30363d" }}>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#8b949e" }}>NEXT LIFTERS</p>
+              <span className="text-xs font-semibold" style={{ color: "#1d6fe8" }}>View All</span>
+            </div>
+            <div className="space-y-2">
+              {controlOrderLifters.slice(0, 5).map((lifter, i) => {
+                const nextWeight = getAttemptValue(lifter, currentLift, currentAttemptIndex);
+                return (
+                  <div
+                    key={lifter.id}
+                    className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5"
+                    style={{
+                      background: lifter.id === currentLifterId ? "#0a1829" : "#21262d",
+                      border: `1px solid ${lifter.id === currentLifterId ? "#1d6fe8" : "#30363d"}`,
+                    }}
+                    onClick={() => {
+                      const orderIndex = controlOrderLifters.findIndex((row) => row.id === lifter.id);
+                      if (orderIndex > 0) reorderCurrentStage(orderIndex, 0);
+                      setCurrentLifterId(lifter.id);
+                      setActionNotice(`Current lifter set: ${lifter.name}`);
+                    }}
+                  >
+                    <span
+                      className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-xs font-black"
+                      style={{ background: "#30363d", color: "#8b949e" }}
+                    >
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-white">{lifter.name}</p>
+                      <p className="text-[10px]" style={{ color: "#8b949e" }}>
+                        BW {typeof lifter.bodyweight === "number" ? lifter.bodyweight : "—"} &nbsp;|&nbsp; LOT {lifter.lot || "—"}
+                      </p>
+                    </div>
+                    {nextWeight !== null && (
+                      <span className="flex-shrink-0 text-sm font-black tabular-nums" style={{ color: "#1d6fe8" }}>
+                        {nextWeight.toFixed(1)} kg
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+              {controlOrderLifters.length === 0 && (
+                <p className="py-4 text-center text-sm" style={{ color: "#8b949e" }}>No lifters in order.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Attempt Selection */}
+          {(() => {
+            const firstQueue = queuedAttemptRows[0];
+            if (!firstQueue) {
+              return (
+                <div className="rounded-lg p-4" style={{ background: "#161b22", border: "1px solid #30363d" }}>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest" style={{ color: "#8b949e" }}>
+                    ATTEMPT SELECTION
+                  </p>
+                  <p className="py-4 text-center text-sm" style={{ color: "#8b949e" }}>No pending declarations.</p>
+                </div>
+              );
+            }
+            const { entry, lifter } = firstQueue;
+            const attempt = getAttempts(lifter, entry.lift)[entry.attemptIndex];
+            const previousAttempt = entry.attemptIndex > 0 ? getAttempts(lifter, entry.lift)[entry.attemptIndex - 1] : null;
+            const minQuickWeight = typeof previousAttempt?.weight === "number" ? previousAttempt.weight : 20;
+            const baseWeight =
+              typeof attempt?.weight === "number"
+                ? attempt.weight
+                : resolveAttemptWeight(lifter, entry.lift, entry.attemptIndex);
+            const quickWeights = buildQuickWeights(baseWeight, minQuickWeight);
+            const draftKey = `${lifter.id}-${entry.lift}-${entry.attemptIndex}`;
+            const draft = quickWeightDraft[draftKey] ?? "";
+
+            const applyQueueWeight = (nextWeight: number) => {
+              const result = updateAttemptForLifter(lifter.id, entry.lift, entry.attemptIndex, nextWeight);
+              if (result.ok) {
+                setQuickWeightDraft((prev) => ({ ...prev, [draftKey]: String(nextWeight) }));
+              }
+              setActionNotice(result.message);
+            };
+
+            return (
+              <div className="rounded-lg p-4" style={{ background: "#161b22", border: "1px solid #30363d" }}>
+                <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "#8b949e" }}>
+                  ATTEMPT SELECTION
+                </p>
+                <p className="mb-3 text-xs font-semibold" style={{ color: "#1d6fe8" }}>
+                  {lifter.name} — {entry.lift.toUpperCase()} A{entry.attemptIndex + 1}
+                </p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {quickWeights.slice(0, 9).map((w) => (
+                    <button
+                      key={w}
+                      onClick={() => applyQueueWeight(w)}
+                      className="rounded py-2.5 text-sm font-bold"
+                      style={{
+                        background: attempt?.weight === w ? "#1d6fe8" : "#21262d",
+                        color: "#ffffff",
+                        border: `1px solid ${attempt?.weight === w ? "#1d6fe8" : "#30363d"}`,
+                      }}
+                    >
+                      {w}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    value={draft}
+                    onChange={(e) => setQuickWeightDraft((prev) => ({ ...prev, [draftKey]: e.target.value }))}
+                    placeholder="Enter weight..."
+                    className="h-10 flex-1 rounded border px-3 text-sm text-white"
+                    style={{ background: "#0d1117", borderColor: "#30363d" }}
+                  />
+                  <span className="flex items-center px-1 text-base" style={{ color: "#8b949e" }}>⌨</span>
+                </div>
+                <button
+                  onClick={() => {
+                    const customVal = Number(draft);
+                    if (Number.isFinite(customVal) && customVal > 0) {
+                      applyQueueWeight(customVal);
+                    }
+                  }}
+                  className="mt-2 w-full rounded py-2.5 text-sm font-bold text-white"
+                  style={{ background: "#21262d", border: "1px solid #30363d" }}
+                >
+                  ENTER CUSTOM WEIGHT ⌨
+                </button>
+              </div>
+            );
+          })()}
+
+          {/* Meet Information */}
+          <div className="rounded-lg p-4" style={{ background: "#161b22", border: "1px solid #30363d" }}>
+            <p className="mb-3 text-[10px] font-bold uppercase tracking-widest" style={{ color: "#8b949e" }}>
+              MEET INFORMATION
+            </p>
+            <div className="space-y-2.5">
+              {[
+                { label: "Event", value: competitionMode === "BENCH_ONLY" ? "Bench Press Only" : "Full Powerlifting" },
+                { label: "Competition", value: activeCompetitionName },
+                { label: "Current Lift", value: `${currentLift.toUpperCase()} — Attempt ${currentAttemptIndex + 1}` },
+                { label: "Mode", value: competitionMode === "BENCH_ONLY" ? "Bench Only" : "Full Game" },
+                { label: "Lifters", value: `${sessionLifters.length} in session` },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex items-start justify-between gap-2">
+                  <span className="flex-shrink-0 text-xs" style={{ color: "#8b949e" }}>{label}</span>
+                  <span className="text-right text-xs font-semibold text-white">{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
       </div>
-    </section>
+
+      {/* ═══ BOTTOM STATUS BAR ═══ */}
+      <footer
+        className="flex flex-shrink-0 items-center justify-between px-5 py-2"
+        style={{ background: "#161b22", borderTop: "1px solid #30363d" }}
+      >
+        <div className="flex items-center gap-2">
+          <span className="inline-block animate-spin text-sm" style={{ color: "#00e676" }}>⟳</span>
+          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#00e676" }}>
+            READY FOR NEXT ATTEMPT
+          </span>
+        </div>
+        <span className="text-xs" style={{ color: "#8b949e" }}>
+          LAST UPDATED: {new Date().toLocaleTimeString()}
+        </span>
+      </footer>
+    </div>
   );
 };
 
