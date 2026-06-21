@@ -1,0 +1,65 @@
+Redesign the Control Center page UI to match a dark-themed powerlifting meet management dashboard. Keep all existing functionality, data, routes, and logic exactly the same — only change the visual design and CSS.
+Overall Layout:
+
+3-column layout: left sidebar + center main panel + right panel
+Dark background color: #0d1117
+All panels use surface color: #161b22 with border: 1px solid #30363d
+Rounded corners: 8px on all cards and panels
+
+Top Navbar:
+
+Left: logo icon + competition name in bold white + venue and date in small gray text
+Center: "GROUP A" badge + running icon + "CURRENT LIFT: SQUAT" label
+Right: "TIME REMAINING" with large yellow monospace countdown digits + "CONNECTED" green dot badge with wifi icon
+Navbar background: #161b22, bottom border: 1px solid #30363d
+
+Left Sidebar:
+
+Width: 240px, background: #161b22
+Navigation items: each has a Tabler icon + label in white
+Active item: solid blue background #1d6fe8, white text, border-radius 6px
+Inactive items: gray text, hover shows subtle lighter background
+Bottom section labeled "MEET STATUS" showing: Active Group (green text), Lifters Remaining, Platform, Meet Director
+Very bottom: app version in tiny gray text
+
+Center Main Panel:
+
+"CURRENT LIFTER" in small green uppercase label at top center
+Lifter name in huge bold white font (64px+)
+Body weight + lot number in small gray text below the name, with green line dividers on each side
+Current weight in giant green font (96px+) with "KG" smaller beside it
+Lift type + attempt number in white/blue text below the weight
+"BAR STATUS" pill showing "BAR LOADED" with green checkbox icon
+Two large full-width buttons side by side: green "GOOD LIFT" with checkmark icon, red "NO LIFT" with X icon
+"REFEREE SIGNALS" label with 3 empty white circle indicators below
+Bottom: "LIFTER NAME – LIFT HISTORY" section with a 3-column table (ATTEMPT 1, ATTEMPT 2, ATTEMPT 3) + BEST column highlighted in green. Pending attempts shown in gray italic
+
+Right Panel:
+
+Width: 320px
+"NEXT LIFTERS" section: numbered list 1–5, each row shows rank number in a dark badge, lifter name bold white, "BW xx.x | LOT x" in gray, weight on the right in blue bold text
+"ATTEMPT SELECTION" section: 3x3 grid of buttons showing weight options, selected weight has solid blue background #1d6fe8, others are dark with white text and gray border, hover shows lighter background
+"ENTER CUSTOM WEIGHT" button: full width, dark background, keyboard icon on the right
+"MEET INFORMATION" section: label-value rows for Event, Date, Venue, Country (with flag emoji)
+
+Bottom Status Bar:
+
+Full width, background #161b22, top border 1px solid #30363d
+Left: spinning loader icon + "READY FOR NEXT ATTEMPT" in green
+Right: "LAST UPDATED: HH:MM:SS AM/PM" in small gray text + fullscreen icon
+
+Color System:
+
+Background: #0d1117
+Surface: #161b22
+Border: #30363d
+Primary text: #ffffff
+Secondary text: #8b949e
+Green accent: #00e676 (good lift, current lifter label, best weight, ready status)
+Red accent: #f44336 (no lift button)
+Blue accent: #1d6fe8 (selected state, next lifter weights, attempt number)
+Yellow accent: #ffd700 (countdown timer digits)
+All buttons use border-radius: 6px
+Countdown timer uses monospace font
+
+Do not change any variable names, functions, API calls, state management, or routing. Only apply new CSS classes and restructure the HTML/JSX layout.
