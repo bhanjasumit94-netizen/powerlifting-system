@@ -108,6 +108,14 @@ type AppContextValue = {
   untrackRefereePresence: () => void;
   setCurrentRefereeSessionId: (sessionId: string | null) => void;
   persistSessionSnapshot: (snapshot: import("./lib/useSupabaseSync").SessionPersistSnapshot) => Promise<void>;
+  /**
+   * Shared verdict fingerprint ref. Both the AppContext auto-apply effect and
+   * the DisplayFullPage auto-apply effect stamp the same ref when they fire, so
+   * neither can independently re-trigger `applyRefereeDecision` for the same
+   * lifter/lift/attempt + signals combination. Prevents duplicate verdict
+   * writes, duplicate queue rebuilds, and the next-attempt dialog firing twice.
+   */
+  verdictFingerprintRef: React.MutableRefObject<string | null>;
 };
 
 
@@ -1033,7 +1041,32 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const stageKeyRef = useRef<string>("");
   const activeCompetitionIdRef = useRef<string | null>(null);
   const verdictPersistInFlightRef = useRef(false);
-  const autoApplyFingerprintRef = useRef<string | null>(null);
+  // Single shared fingerprint ref for all auto-apply-verdict effects (AppContext
+  // + DisplayFullPage). Whichever fires first stamps the ref; the other dedupes
+  // against it. This is the fix for the duplicate next-attempt-declaration bug:
+  // previously each effect had its own ref, so neither deduped the other.
+  const verdictFingerprintRef = useRef<string | null>(null);
+  const autoApplyFingerprintRef = verdictFingerprintRef;
+  // Dedup back-to-back duplicate next-attempt submissions for the same
+  // (lifterId|lift|attemptIndex|weight). If set/declared within the last
+  // 1.5s, the same declaration is ignored. Guards against realtime-echo
+  // re-renders and re-entrant calls firing the queue panel / clock twice.
+  const processedAttemptIdsRef = useRef<Map<string, number>>(new Map());
+  const NEXT_ATTEMPT_DEDUP_MS = 1500;
+
+  const isDuplicateAttempt = useCallback(
+    (lifterId: string, lift: LiftType, attemptIndex: number, weight: number | "") => {
+      const key = `${lifterId}|${lift}|${attemptIndex}|${weight}`;
+      const now = Date.now();
+      const lastTs = processedAttemptIdsRef.current.get(key);
+      if (lastTs != null && now - lastTs < NEXT_ATTEMPT_DEDUP_MS) {
+        return true;
+      }
+      processedAttemptIdsRef.current.set(key, now);
+      return false;
+    },
+    [],
+  );
 
   useEffect(() => {
     activeCompetitionIdRef.current = activeCompetitionId;
@@ -1753,6 +1786,16 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     const txId = `${lifterId}-${lift}-${attemptIndex}-${Date.now()}`;
+    if (isDuplicateAttempt(lifterId, lift, attemptIndex, weight)) {
+      console.warn(LOG_SESSION, "NEXT_ATTEMPT_PROCESSED (duplicate — ignored)", {
+        txId,
+        lifterId,
+        lift,
+        attemptIndex,
+        weight,
+      });
+      return { ok: false, message: "Attempt already submitted." };
+    }
     console.log(LOG_SESSION, "NEXT_ATTEMPT_REQUESTED", {
       txId,
       lifterId,
@@ -1834,7 +1877,7 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
     lifters, nextAttemptQueue, timerPhase, startNextAttemptClock, clearTimerState, setNextAttemptQueue,
     groups, currentLifterId, currentLift, currentAttemptIndex, competitionStarted, includeCollars,
     timerEndsAt, competitionMode, activeCompetitionGroupName, manualOrderByStage, persistSessionSnapshot,
-    supabaseSyncReadOnly,
+    supabaseSyncReadOnly, isDuplicateAttempt,
   ]);
 
   const applyRefereeDecision = useCallback(async (overrideSignals?: RefSignal[]) => {
@@ -2144,8 +2187,10 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
   }, [currentLifterId, currentLift, currentAttemptIndex, refereeSignals, resetSignals]);
 
   // Auto-apply verdict on ANY page (not just the display screen) when all 3 signals arrive.
-  // Skip when running inside the display tab — DisplayFullPage owns verdict application there
-  // to avoid two concurrent applyRefereeDecision calls from the same JS context.
+  // Shares the verdictFingerprintRef with the DisplayFullPage effect below, so the two
+  // effects never both fire for the same lifter/lift/attempt + signals combo — this is the
+  // fix for the duplicate next-attempt-declaration bug (double verdict write, double queue
+  // rebuild, double clock restart, double Firebase persist).
   useEffect(() => {
     if (!isFirebaseConfigured) return;
     if (isDisplayScreenRef.current) return;
@@ -2220,6 +2265,7 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
         untrackRefereePresence: untrackPresence,
         setCurrentRefereeSessionId,
         persistSessionSnapshot,
+        verdictFingerprintRef,
       }}
     >
       {children}
@@ -7893,6 +7939,7 @@ const DisplayFullPage = () => {
     competitions,
     activeCompetitionId,
     switchCompetition,
+    verdictFingerprintRef,
   } = useAppContext();
   const isBenchOnlyMode = competitionMode === "BENCH_ONLY";
   const [searchParams] = useSearchParams();
@@ -7924,22 +7971,23 @@ const DisplayFullPage = () => {
   const overlayHideTimeoutRef = useRef<number | null>(null);
   const overlayPhaseTimeoutRef = useRef<number | null>(null);
   const prevLiveRefereeCountRef = useRef(-1);
-  const displayVerdictFingerprintRef = useRef<string | null>(null);
+  // Uses the shared verdictFingerprintRef from AppContext so that the AppContext
+  // auto-apply effect and this one never both fire for the same verdict.
 
   // With Supabase: display records the official verdict (Control only drives platform via DB realtime).
   useEffect(() => {
     if (!isFirebaseConfigured) return;
     if (!refereeSignals.every((signal) => signal !== null)) {
-      displayVerdictFingerprintRef.current = null;
+      verdictFingerprintRef.current = null;
       return;
     }
     if (!currentLifterId) return;
 
     const fingerprint = `${currentLifterId}|${currentLift}|${currentAttemptIndex}|${JSON.stringify(refereeSignals)}`;
-    if (displayVerdictFingerprintRef.current === fingerprint) return;
+    if (verdictFingerprintRef.current === fingerprint) return;
 
     const timer = window.setTimeout(() => {
-      displayVerdictFingerprintRef.current = fingerprint;
+      verdictFingerprintRef.current = fingerprint;
       console.log(LOG_DISPLAY, "3/3 signals — applying official verdict", {
         currentLifterId,
         currentLift,
